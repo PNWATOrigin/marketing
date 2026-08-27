@@ -25,7 +25,7 @@ export const COMPANY = {
   /** 화면 상단 큰 제목 (강조되는 뒷부분) */
   titleAccent: "AI Office",
   /** 브라우저 탭 제목 */
-  pageTitle: "sunnyes — 나의 AI 오피스",
+  pageTitle: "나의 sunnyes 오피스",
   /** 검색·공유될 때 뜨는 설명 */
   description: "12개 AI 팀이 리서치·전략·제작·성과분석까지 돌아가는 마케팅·브랜딩 대행사 sunnyes의 AI 오피스",
   /** 창 하단 파일명 느낌의 라벨 */
