@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="LINCRE cosmetics & fashion 주문·CS·결제 챗봇 데모" />
+    <title>LINCRE Concierge · 주문·CS·결제</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand-lockup" href="#top" aria-label="LINCRE 홈">
+          <img class="brand-logo" src="./public/assets/lincre-logo.png" alt="LINCRE" />
+          <span class="brand-divider" aria-hidden="true"></span>
+          <span class="brand-copy">
+            <strong>Concierge</strong>
+            <small>주문 · CS · 결제</small>
+          </span>
+        </a>
+        <div class="online-status"><span></span> 지금 상담 가능</div>
+      </header>
+
+      <main id="top" class="workspace-grid">
+        <section class="chat-card card-surface" aria-labelledby="chat-title">
+          <div class="chat-header">
+            <div class="mascot-orbit">
+              <img src="./public/assets/lincre-mascot.png" alt="LINCRE 상담 도우미 펠트 수달 캐릭터" />
+              <span class="mascot-spark spark-one">✦</span>
+              <span class="mascot-spark spark-two">✧</span>
+            </div>
+            <div class="chat-title-wrap">
+              <p class="eyebrow">LINCRE CONCIERGE</p>
+              <h1 id="chat-title">무엇이든 편하게 물어보세요 :)</h1>
+              <p class="subcopy">화장품, 패션, 주문까지 한 화면에서 도와드릴게요.</p>
+            </div>
+            <div class="trust-note" title="운영 시간 내 상담 가능">
+              <span class="trust-dot"></span>
+              <span>상담 연결 준비</span>
+            </div>
+          </div>
+
+          <div class="quick-actions" aria-label="자주 묻는 질문">
+            <button class="quick-button" type="button" data-message="배송 언제 와요?">배송 언제 와요? 🚚</button>
+            <button class="quick-button" type="button" data-message="환불하고 싶어요">환불하고 싶어요 🙏</button>
+            <button class="quick-button" type="button" data-message="내 주문 보여줘">내 주문 보여줘 📦</button>
+            <button class="quick-button" type="button" data-message="피부에 맞는 상품 추천해줘">상품 추천해줘 ✨</button>
+          </div>
+
+          <div id="messages" class="messages" aria-live="polite" aria-label="상담 메시지">
+            <div class="date-divider"><span>오늘</span></div>
+            <article class="message-row bot-row">
+              <div class="message-avatar"><img src="./public/assets/lincre-mascot.png" alt="" /></div>
+              <div>
+                <div class="message-bubble bot-bubble">
+                  <p>안녕하세요! 린크레 도우미 모아예요 🐾</p>
+                  <p>배송이나 환불처럼 조금 복잡한 문의는 담당자까지 자연스럽게 연결해드릴게요. 지금 가장 궁금한 걸 편하게 적어주세요 :)</p>
+                </div>
+                <time>방금 전</time>
+              </div>
+            </article>
+          </div>
+
+          <form id="chat-form" class="composer" autocomplete="off">
+            <label class="sr-only" for="chat-input">문의 내용을 입력하세요</label>
+            <input id="chat-input" name="message" type="text" maxlength="300" placeholder="예: 배송이 언제 오는지 궁금해요" />
+            <button class="send-button" type="submit" aria-label="메시지 보내기">
+              <span>보내기</span>
+              <span aria-hidden="true">↗</span>
+            </button>
+          </form>
+          <p class="privacy-note">문의 내용은 상담 연결을 위해서만 사용돼요. 개인정보나 카드번호는 입력하지 말아주세요.</p>
+        </section>
+
+        <aside class="shop-column" aria-label="주문 및 결제">
+          <section class="order-card card-surface" aria-labelledby="order-title">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">MY SHOPPING</p>
+                <h2 id="order-title">주문 리스트</h2>
+              </div>
+              <button id="cart-toggle" class="cart-toggle" type="button" aria-expanded="false">
+                <span aria-hidden="true">🛒</span>
+                <span>장바구니</span>
+                <b id="cart-count">0</b>
+              </button>
+            </div>
+
+            <div class="order-summary-strip">
+              <div><span class="summary-label">진행 중인 주문</span><strong>1건</strong></div>
+              <div><span class="summary-label">최근 주문일</span><strong>08.30</strong></div>
+              <button class="text-button" type="button" data-message="내 주문 보여줘">상세보기 →</button>
+            </div>
+
+            <div class="order-item featured-order">
+              <div class="order-icon order-icon-blue">LC</div>
+              <div class="order-main">
+                <div class="order-line"><strong>린크레 데일리 케어 세트</strong><span class="order-status">배송 준비 중</span></div>
+                <p>주문번호 LC-20394 · 2026.08.30</p>
+                <div class="order-progress"><span style="width: 42%"></span></div>
+                <small>상품 준비 중이에요. 출고되면 바로 알려드릴게요.</small>
+              </div>
+            </div>
+
+            <div class="product-heading">
+              <div>
+                <p class="eyebrow">CURATED FOR YOU</p>
+                <h3>지금 담기 좋은 아이템</h3>
+              </div>
+              <span>4 items</span>
+            </div>
+            <div id="product-list" class="product-list"></div>
+          </section>
+
+          <section id="cart-panel" class="cart-card card-surface" hidden aria-labelledby="cart-title">
+            <div class="section-heading compact-heading">
+              <div>
+                <p class="eyebrow">YOUR BAG</p>
+                <h2 id="cart-title">장바구니</h2>
+              </div>
+              <button id="cart-close" class="icon-button" type="button" aria-label="장바구니 닫기">×</button>
+            </div>
+            <div id="cart-items" class="cart-items"></div>
+            <div class="cart-total"><span>총 결제 예정 금액</span><strong id="cart-total">0원</strong></div>
+            <button id="checkout-open" class="primary-button wide-button" type="button">결제 진행하기 <span>→</span></button>
+          </section>
+
+          <section id="checkout-panel" class="checkout-card card-surface" hidden aria-labelledby="checkout-title">
+            <div class="section-heading compact-heading">
+              <div>
+                <p class="eyebrow">CHECKOUT</p>
+                <h2 id="checkout-title">주문 정보 확인</h2>
+              </div>
+              <button id="checkout-close" class="icon-button" type="button" aria-label="결제 화면 닫기">×</button>
+            </div>
+            <form id="checkout-form" class="checkout-form">
+              <label>받는 분<input name="name" required placeholder="이름을 입력해 주세요" /></label>
+              <label>연락처<input name="phone" required inputmode="tel" placeholder="010-0000-0000" /></label>
+              <label>배송지<input name="address" required placeholder="주소를 입력해 주세요" /></label>
+              <fieldset>
+                <legend>결제 수단</legend>
+                <label class="payment-option"><input type="radio" name="payment" value="카드 결제" checked /> 카드 결제 <span>안전한 결제창으로 이동</span></label>
+                <label class="payment-option"><input type="radio" name="payment" value="간편 결제" /> 간편 결제 <span>토스·카카오 등 연결 가능</span></label>
+              </fieldset>
+              <p class="payment-demo-note">현재는 데모 결제 화면입니다. 실제 운영 시 <code>/api/payment/prepare</code>에 PG사 결제창을 연결하세요.</p>
+              <button class="primary-button wide-button" type="submit">결제창 준비하기 <span>↗</span></button>
+            </form>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="site-footer"><span>LINCRE Concierge</span><span>상담원이 이어서 확인할 수 있도록 문의 흐름을 남겨드려요.</span></footer>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>
