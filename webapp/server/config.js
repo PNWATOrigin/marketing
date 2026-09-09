@@ -24,8 +24,10 @@ export const config = {
   cleanupIntervalMinutes: int('CLEANUP_INTERVAL_MINUTES', 5),
 
   analyzeTimeoutMs: int('ANALYZE_TIMEOUT_MS', 12000),
-  imageTimeoutMs: int('IMAGE_TIMEOUT_MS', 8000),
-  renderTimeoutMs: int('RENDER_TIMEOUT_MS', 300000),
+  imageTimeoutMs: int('IMAGE_TIMEOUT_MS', 6000),
+  // 목적 선택 후 "제작 시작"부터 완성까지 총 3분 안에 끝나도록: 이미지 준비(최대 ~9초) +
+  // 인코딩(최대 150초) + 여유분을 더해도 3분 밑으로 떨어지게 잡은 값.
+  renderTimeoutMs: int('RENDER_TIMEOUT_MS', 150000),
 
   maxHtmlBytes: int('MAX_HTML_BYTES', 3 * 1024 * 1024),
   maxImageBytes: int('MAX_IMAGE_BYTES', 8 * 1024 * 1024),

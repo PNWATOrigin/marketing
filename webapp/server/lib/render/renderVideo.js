@@ -68,7 +68,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress }
     '-c:v',
     'libx264',
     '-preset',
-    'veryfast',
+    'ultrafast', // 3분 이내 완료 목표: 압축률보다 인코딩 속도 우선 (짧은 SNS 영상이라 화질 차이는 미미함)
     '-crf',
     '20',
     '-pix_fmt',
