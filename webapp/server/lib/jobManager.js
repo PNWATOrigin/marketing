@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { config } from '../config.js';
 import { ConcurrencyQueue } from './queue.js';
-import { getJob, updateJob } from './jobStore.js';
+import { getJob, updateJob, setJobProgress } from './jobStore.js';
 import { fetchProductPage, PageFetchError } from './fetchPage.js';
 import { analyzeHtml } from './analyze.js';
 import { downloadImages } from './images.js';
@@ -55,17 +55,22 @@ async function runRender(jobId) {
   if (!job) return;
 
   for (;;) {
-    updateJob(jobId, { status: 'scripting', stage: 'scripting', error: null });
+    updateJob(jobId, { status: 'scripting', stage: 'scripting', error: null, progress: null });
     const workDir = path.join(config.workDir, jobId);
     try {
       const script = generateScript(job.product, job.purpose);
 
-      updateJob(jobId, { status: 'rendering', stage: 'rendering' });
+      updateJob(jobId, { status: 'rendering', stage: 'rendering', progress: 0 });
       const imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'));
 
       await fs.mkdir(config.outputDir, { recursive: true });
       const outputPath = path.join(config.outputDir, `${jobId}.mp4`);
-      await renderVideo({ scenes: script.scenes, imagePaths, outputPath });
+      await renderVideo({
+        scenes: script.scenes,
+        imagePaths,
+        outputPath,
+        onProgress: (fraction) => setJobProgress(jobId, Math.round(fraction * 100)),
+      });
       const { size } = await fs.stat(outputPath);
 
       const expiresAt = Date.now() + config.outputExpiryMinutes * 60 * 1000;

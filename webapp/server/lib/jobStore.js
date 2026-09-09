@@ -40,10 +40,21 @@ export function createJob({ url, clientId }) {
     outputPath: null,
     outputBytes: null,
     expiresAt: null,
+    progress: null,
   };
   jobs.set(id, job);
   persist(job);
   return job;
+}
+
+// 렌더링 중 ffmpeg 진행률(0~100)처럼 아주 자주 바뀌는 값은 디스크에 매번 쓰지 않고
+// 메모리만 갱신한다 (서버가 재시작되면 진행 중이던 작업은 어차피 실패로 표시되므로
+// 진행률 값 자체를 영속화할 필요가 없다).
+export function setJobProgress(id, progress) {
+  const job = jobs.get(id);
+  if (!job) return;
+  job.progress = progress;
+  job.updatedAt = Date.now();
 }
 
 export function getJob(id) {
@@ -75,6 +86,7 @@ export function toPublicJob(job) {
     id: job.id,
     status: job.status,
     stage: job.stage,
+    progress: job.progress,
     purpose: job.purpose,
     product: job.product
       ? {

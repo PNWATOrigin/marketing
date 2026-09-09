@@ -50,8 +50,6 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress }
 
   const plan = buildRenderPlan({ scenes, sceneImagePaths, fonts });
 
-  onProgress?.('rendering');
-
   const args = [
     '-y',
     '-hide_banner',
@@ -80,7 +78,8 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress }
     outputPath,
   ];
 
-  await runFfmpeg(args, { timeoutMs: config.renderTimeoutMs });
+  // onProgress(fraction)로 0~1 사이 실제 ffmpeg 진행률을 그대로 전달한다.
+  await runFfmpeg(args, { timeoutMs: config.renderTimeoutMs, totalSeconds: plan.totalDuration, onProgress });
   const info = await verifyOutput(outputPath, plan.totalDuration);
   return { outputPath, ...info, totalDuration: plan.totalDuration };
 }

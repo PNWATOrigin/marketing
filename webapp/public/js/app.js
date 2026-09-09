@@ -169,13 +169,15 @@
     });
   }
 
+  // ffmpeg 진행률(job.progress, 0~100)이 아직 도착하기 전이나 값이 멈춰있을 때를 대비해
+  // 아주 천천히 올라가는 것처럼 보이게 하는 최소한의 보조 장치. 실제 값이 오면 바로 대체된다.
   function startFakeRenderProgress() {
     stopFakeProgress();
     let value = STAGE_PROGRESS.rendering;
     renderProgressTimer = setInterval(() => {
-      value = Math.min(value + 1.5, 92);
+      value = Math.min(value + 1, 90);
       progressFill.style.width = `${value}%`;
-    }, 1200);
+    }, 1500);
   }
 
   function applyJobState(job) {
@@ -195,9 +197,16 @@
       case 'scripting':
       case 'rendering': {
         showView('progress');
-        progressStageLabel.textContent = STAGE_LABELS[job.status];
-        progressFill.style.width = `${STAGE_PROGRESS[job.status]}%`;
-        if (job.status === 'rendering' && !renderProgressTimer) startFakeRenderProgress();
+        if (job.status === 'rendering' && typeof job.progress === 'number') {
+          stopFakeProgress();
+          const percent = Math.round(48 + (job.progress / 100) * 50);
+          progressFill.style.width = `${percent}%`;
+          progressStageLabel.textContent = `${STAGE_LABELS.rendering} (${job.progress}%)`;
+        } else {
+          progressStageLabel.textContent = STAGE_LABELS[job.status];
+          progressFill.style.width = `${STAGE_PROGRESS[job.status]}%`;
+          if (job.status === 'rendering' && !renderProgressTimer) startFakeRenderProgress();
+        }
         break;
       }
       case 'completed': {

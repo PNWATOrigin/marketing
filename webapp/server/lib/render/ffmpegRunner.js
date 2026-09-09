@@ -8,9 +8,27 @@ export class FfmpegError extends Error {
   }
 }
 
-export function runFfmpeg(args, { timeoutMs = config.renderTimeoutMs } = {}) {
+// ffmpeg의 `-progress pipe:1` 출력(key=value 줄들)에서 out_time을 읽어 0~1 진행률로 변환한다.
+function watchProgress(stream, totalSeconds, onProgress) {
+  if (!onProgress || !totalSeconds) return;
+  let buffer = '';
+  stream.on('data', (chunk) => {
+    buffer += chunk.toString();
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // 마지막 줄은 아직 미완성일 수 있음
+    for (const line of lines) {
+      const match = /^out_time_(?:ms|us)=(\d+)/.exec(line.trim());
+      if (!match) continue;
+      const seconds = Number(match[1]) / 1e6;
+      onProgress(Math.min(1, Math.max(0, seconds / totalSeconds)));
+    }
+  });
+}
+
+export function runFfmpeg(args, { timeoutMs = config.renderTimeoutMs, totalSeconds, onProgress } = {}) {
   return new Promise((resolve, reject) => {
-    const proc = spawn(config.ffmpegPath, args);
+    const fullArgs = onProgress ? ['-progress', 'pipe:1', '-nostats', ...args] : args;
+    const proc = spawn(config.ffmpegPath, fullArgs);
     let stderr = '';
     let settled = false;
 
@@ -21,6 +39,7 @@ export function runFfmpeg(args, { timeoutMs = config.renderTimeoutMs } = {}) {
       reject(new FfmpegError('영상 렌더링 시간이 초과됐어요.'));
     }, timeoutMs);
 
+    watchProgress(proc.stdout, totalSeconds, onProgress);
     proc.stderr.on('data', (d) => {
       stderr += d.toString();
       if (stderr.length > 20000) stderr = stderr.slice(-20000); // 메모리 보호
