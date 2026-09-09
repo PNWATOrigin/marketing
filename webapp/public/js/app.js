@@ -107,25 +107,17 @@
     el.hidden = !message;
   }
 
-  function formatPrice(product) {
-    if (product.price == null) return null;
-    const currency = product.currency || 'KRW';
-    if (currency === 'KRW') return `${Math.round(product.price).toLocaleString('ko-KR')}원`;
-    return `${product.price.toLocaleString('ko-KR')} ${currency}`;
-  }
-
   function renderProductSummary(product) {
     if (!product) {
       productSummary.innerHTML = '';
       return;
     }
     const img = product.images?.[0];
-    const price = formatPrice(product);
     productSummary.innerHTML = `
       ${img ? `<img src="${img}" alt="" onerror="this.remove()" />` : ''}
       <div>
         <div class="ps-name">${escapeHtml(product.name || '상품명을 확인하지 못했어요')}</div>
-        <div class="ps-meta">${[product.brand, price].filter(Boolean).map(escapeHtml).join(' · ') || '추가 정보 없음'}</div>
+        <div class="ps-meta">${product.brand ? escapeHtml(product.brand) : '추가 정보 없음'}</div>
       </div>
     `;
   }

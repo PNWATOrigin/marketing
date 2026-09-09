@@ -61,7 +61,11 @@ async function runRender(jobId) {
       const script = generateScript(job.product, job.purpose);
 
       updateJob(jobId, { status: 'rendering', stage: 'rendering', progress: 0 });
-      const imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'));
+      // 이미지 다운로드(0~10%)와 ffmpeg 인코딩(10~100%)을 하나의 진행률로 이어붙인다.
+      // 다운로드 단계에서도 숫자가 실제로 움직여야, 느린 이미지 때문에 멈춰 보이지 않는다.
+      const imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
+        onEach: (done, total) => setJobProgress(jobId, total ? Math.round((done / total) * 10) : 0),
+      });
 
       await fs.mkdir(config.outputDir, { recursive: true });
       const outputPath = path.join(config.outputDir, `${jobId}.mp4`);
@@ -69,7 +73,7 @@ async function runRender(jobId) {
         scenes: script.scenes,
         imagePaths,
         outputPath,
-        onProgress: (fraction) => setJobProgress(jobId, Math.round(fraction * 100)),
+        onProgress: (fraction) => setJobProgress(jobId, Math.round(10 + fraction * 90)),
       });
       const { size } = await fs.stat(outputPath);
 
