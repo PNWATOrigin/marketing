@@ -100,6 +100,7 @@ export function toPublicJob(job) {
           warnings: job.product.warnings,
         }
       : null,
+    scenes: job.scenes || null,
     error: job.error,
     attempts: job.attempts,
     createdAt: job.createdAt,

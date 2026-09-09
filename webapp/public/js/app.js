@@ -60,6 +60,9 @@
   const startRenderBtn = document.getElementById('start-render-btn');
   const progressFill = document.getElementById('progress-fill');
   const progressStageLabel = document.getElementById('progress-stage-label');
+  const previewPanel = document.getElementById('render-preview');
+  const previewImg = document.getElementById('render-preview-img');
+  const previewCaption = document.getElementById('render-preview-caption');
   const resultVideo = document.getElementById('result-video');
   const downloadBtn = document.getElementById('download-btn');
   const remakeBtn = document.getElementById('remake-btn');
@@ -78,11 +81,10 @@
   };
 
   const STAGE_PROGRESS = {
-    queued: 8,
-    analyzing: 20,
-    awaiting_purpose: 30,
-    scripting: 48,
-    rendering: 68,
+    queued: 1,
+    analyzing: 3,
+    awaiting_purpose: 5,
+    scripting: 6,
     completed: 100,
   };
 
@@ -91,6 +93,8 @@
   let currentJobId = null;
   let pollTimer = null;
   let renderProgressTimer = null;
+  let previewTimer = null;
+  let previewIndex = 0;
 
   function stopPolling() {
     if (pollTimer) clearTimeout(pollTimer);
@@ -165,22 +169,51 @@
   // 아주 천천히 올라가는 것처럼 보이게 하는 최소한의 보조 장치. 실제 값이 오면 바로 대체된다.
   function startFakeRenderProgress() {
     stopFakeProgress();
-    let value = STAGE_PROGRESS.rendering;
+    let value = STAGE_PROGRESS.scripting;
     renderProgressTimer = setInterval(() => {
-      value = Math.min(value + 1, 90);
+      value = Math.min(value + 1, 15);
       progressFill.style.width = `${value}%`;
     }, 1500);
+  }
+
+  // 실제 렌더링 프레임은 아니지만, 실제 상품 이미지와 실제 대본 문구를 그대로 순환시켜
+  // "만들어지고 있다"는 것을 눈으로 확인할 수 있게 한다.
+  function startPreviewCycle(job) {
+    if (previewTimer) return;
+    const images = job.product?.images || [];
+    const scenes = job.scenes || [];
+    if (!images.length && !scenes.length) return;
+    previewPanel.hidden = false;
+    previewIndex = 0;
+    const render = () => {
+      const scene = scenes.length ? scenes[previewIndex % scenes.length] : null;
+      const img = images.length ? images[previewIndex % images.length] : null;
+      previewImg.style.visibility = img ? 'visible' : 'hidden';
+      if (img) previewImg.src = img;
+      previewCaption.textContent = scene?.headline || '';
+      previewIndex += 1;
+    };
+    render();
+    previewTimer = setInterval(render, 1400);
+  }
+
+  function stopPreviewCycle() {
+    if (previewTimer) clearInterval(previewTimer);
+    previewTimer = null;
+    previewPanel.hidden = true;
   }
 
   function applyJobState(job) {
     switch (job.status) {
       case 'queued':
       case 'analyzing': {
+        stopPreviewCycle();
         showView('analyzing');
         break;
       }
       case 'awaiting_purpose': {
         stopFakeProgress();
+        stopPreviewCycle();
         renderProductSummary(job.product);
         renderPurposeCards();
         showView('purpose');
@@ -191,9 +224,9 @@
         showView('progress');
         if (job.status === 'rendering' && typeof job.progress === 'number') {
           stopFakeProgress();
-          const percent = Math.round(48 + (job.progress / 100) * 50);
-          progressFill.style.width = `${percent}%`;
+          progressFill.style.width = `${Math.max(1, job.progress)}%`;
           progressStageLabel.textContent = `${STAGE_LABELS.rendering} (${job.progress}%)`;
+          startPreviewCycle(job);
         } else {
           progressStageLabel.textContent = STAGE_LABELS[job.status];
           progressFill.style.width = `${STAGE_PROGRESS[job.status]}%`;
@@ -203,6 +236,7 @@
       }
       case 'completed': {
         stopFakeProgress();
+        stopPreviewCycle();
         stopPolling();
         const src = `/api/jobs/${job.id}/download`;
         resultVideo.src = src;
@@ -214,6 +248,7 @@
       }
       case 'failed': {
         stopFakeProgress();
+        stopPreviewCycle();
         stopPolling();
         setError(failedMessage, job.error || '알 수 없는 오류가 발생했어요.');
         showView('failed');
