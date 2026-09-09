@@ -59,11 +59,11 @@ function startProgressWatchdog(jobId) {
     setJobProgress(jobId, last);
   };
   const timer = setInterval(() => {
-    if (Date.now() - lastAt > 1500 && last < 95) {
+    if (Date.now() - lastAt > 1000 && last < 95) {
       last += 1;
       setJobProgress(jobId, last);
     }
-  }, 1500);
+  }, 1000);
   return { report, stop: () => clearInterval(timer) };
 }
 

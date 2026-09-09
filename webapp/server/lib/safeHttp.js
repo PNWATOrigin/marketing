@@ -3,7 +3,10 @@ import https from 'node:https';
 import dns from 'node:dns';
 import { assertSafeUrlFormat, isPrivateIp, UnsafeUrlError } from './ssrf.js';
 
-const USER_AGENT = 'ShortformAdStudio/1.0 (+product-url-analyzer)';
+// 일반 브라우저처럼 보이게 해서, 봇을 차단/지연시키는 CDN·쇼핑몰에서
+// 요청이 늦게 응답하거나 멈추는 일을 줄인다 (특히 이미지 다운로드에서 중요).
+const USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 // 이미 한국어로 작성된, 그대로 사용자에게 보여줘도 되는 오류.
 export class SafeHttpError extends Error {
