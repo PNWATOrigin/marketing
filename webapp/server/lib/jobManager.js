@@ -47,6 +47,26 @@ async function runAnalyze(jobId) {
   }
 }
 
+// 실제 진행률 보고가 느리거나(느린 이미지, 느린 서버 CPU) 잠시 멈춰도 화면 숫자가
+// 계속 살아 움직이도록 하는 감시 타이머. 진짜 값이 오면 그 값을 우선하고,
+// 1.5초 넘게 새 값이 없으면 스스로 조금씩 올려서 "멈춘 것처럼" 보이지 않게 한다.
+function startProgressWatchdog(jobId) {
+  let last = 0;
+  let lastAt = Date.now();
+  const report = (value) => {
+    last = Math.max(last, value);
+    lastAt = Date.now();
+    setJobProgress(jobId, last);
+  };
+  const timer = setInterval(() => {
+    if (Date.now() - lastAt > 1500 && last < 95) {
+      last += 1;
+      setJobProgress(jobId, last);
+    }
+  }, 1500);
+  return { report, stop: () => clearInterval(timer) };
+}
+
 // 실패 시 큐에 다시 넣지 않고 같은 작업 슬롯 안에서 바로 재시도한다.
 // (재시도를 enqueueRender로 다시 큐에 넣으면, 이 함수를 감싸는 최초 호출의 finally가
 //  방금 등록된 inFlight 표시를 지워버려 중복 실행 방지 장치가 깨지는 문제가 있었다.)
@@ -57,15 +77,15 @@ async function runRender(jobId) {
   for (;;) {
     updateJob(jobId, { status: 'scripting', stage: 'scripting', error: null, progress: null });
     const workDir = path.join(config.workDir, jobId);
+    const watchdog = startProgressWatchdog(jobId);
     try {
       const script = generateScript(job.product, job.purpose);
       const scenes = script.scenes.map((s) => ({ headline: s.headline, sub: s.sub || null }));
 
       updateJob(jobId, { status: 'rendering', stage: 'rendering', progress: 0, scenes });
       // 이미지 다운로드(0~10%)와 ffmpeg 인코딩(10~100%)을 하나의 진행률로 이어붙인다.
-      // 다운로드 단계에서도 숫자가 실제로 움직여야, 느린 이미지 때문에 멈춰 보이지 않는다.
       const imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
-        onEach: (done, total) => setJobProgress(jobId, total ? Math.round((done / total) * 10) : 0),
+        onEach: (done, total) => watchdog.report(total ? Math.round((done / total) * 10) : 0),
       });
 
       await fs.mkdir(config.outputDir, { recursive: true });
@@ -74,7 +94,7 @@ async function runRender(jobId) {
         scenes: script.scenes,
         imagePaths,
         outputPath,
-        onProgress: (fraction) => setJobProgress(jobId, Math.round(10 + fraction * 90)),
+        onProgress: (fraction) => watchdog.report(Math.round(10 + fraction * 90)),
       });
       const { size } = await fs.stat(outputPath);
 
@@ -97,6 +117,7 @@ async function runRender(jobId) {
       updateJob(jobId, { status: 'failed', stage: 'rendering', error: friendlyError(err) });
       return;
     } finally {
+      watchdog.stop();
       await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
     }
   }

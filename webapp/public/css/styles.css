@@ -217,6 +217,12 @@ body {
   margin-top: 14px;
 }
 
+.hint-text {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: 10px 0 0;
+}
+
 .center-card {
   text-align: center;
 }

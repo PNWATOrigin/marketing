@@ -25,7 +25,7 @@ export const config = {
 
   analyzeTimeoutMs: int('ANALYZE_TIMEOUT_MS', 12000),
   imageTimeoutMs: int('IMAGE_TIMEOUT_MS', 8000),
-  renderTimeoutMs: int('RENDER_TIMEOUT_MS', 120000),
+  renderTimeoutMs: int('RENDER_TIMEOUT_MS', 300000),
 
   maxHtmlBytes: int('MAX_HTML_BYTES', 3 * 1024 * 1024),
   maxImageBytes: int('MAX_IMAGE_BYTES', 8 * 1024 * 1024),

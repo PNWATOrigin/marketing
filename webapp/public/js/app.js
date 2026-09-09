@@ -75,10 +75,21 @@
     analyzing: '상품 정보를 분석하는 중...',
     awaiting_purpose: '분석이 끝났어요',
     scripting: '대본을 작성하는 중...',
-    rendering: '영상을 렌더링하는 중...',
     completed: '완성됐어요!',
     failed: '문제가 발생했어요',
   };
+
+  // 렌더링 진행률(%) 구간에 따라 실제로 진행 중인 작업에 가까운 문구로 천천히 바꿔 보여준다.
+  const RENDERING_PHASES = [
+    [15, '이미지를 준비하는 중...'],
+    [35, '장면을 구성하는 중...'],
+    [60, '자막과 효과를 입히는 중...'],
+    [90, '영상으로 인코딩하는 중...'],
+    [100, '마무리하는 중...'],
+  ];
+  function renderingPhaseLabel(percent) {
+    return (RENDERING_PHASES.find(([max]) => percent <= max) || RENDERING_PHASES.at(-1))[1];
+  }
 
   const STAGE_PROGRESS = {
     queued: 1,
@@ -225,7 +236,7 @@
         if (job.status === 'rendering' && typeof job.progress === 'number') {
           stopFakeProgress();
           progressFill.style.width = `${Math.max(1, job.progress)}%`;
-          progressStageLabel.textContent = `${STAGE_LABELS.rendering} (${job.progress}%)`;
+          progressStageLabel.textContent = `${renderingPhaseLabel(job.progress)} (${job.progress}%)`;
           startPreviewCycle(job);
         } else {
           progressStageLabel.textContent = STAGE_LABELS[job.status];
