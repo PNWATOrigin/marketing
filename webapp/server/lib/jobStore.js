@@ -1,0 +1,147 @@
+import fs from 'node:fs/promises';
+import fssync from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { config } from '../config.js';
+
+// 작업 상태 흐름: queued -> analyzing -> awaiting_purpose -> (사용자가 목적 선택) ->
+//                queued -> scripting -> rendering -> completed / failed
+const jobs = new Map();
+
+function jobFilePath(id) {
+  return path.join(config.jobsDir, `${id}.json`);
+}
+
+async function persist(job) {
+  try {
+    await fs.mkdir(config.jobsDir, { recursive: true });
+    await fs.writeFile(jobFilePath(job.id), JSON.stringify(job));
+  } catch (err) {
+    console.error('작업 상태 저장 실패:', err.message);
+  }
+}
+
+export function createJob({ url, clientId }) {
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  const job = {
+    id,
+    url,
+    clientId,
+    status: 'queued',
+    stage: 'queued',
+    purpose: null,
+    product: null,
+    warnings: [],
+    error: null,
+    attempts: 0,
+    createdAt: now,
+    updatedAt: now,
+    outputPath: null,
+    outputBytes: null,
+    expiresAt: null,
+  };
+  jobs.set(id, job);
+  persist(job);
+  return job;
+}
+
+export function getJob(id) {
+  return jobs.get(id) || null;
+}
+
+export function updateJob(id, patch) {
+  const job = jobs.get(id);
+  if (!job) return null;
+  Object.assign(job, patch, { updatedAt: Date.now() });
+  persist(job);
+  return job;
+}
+
+// 같은 브라우저(클라이언트)가 동시에 여러 작업을 만드는 것을 막기 위한 활성 작업 수 계산.
+const ACTIVE_STATUSES = new Set(['queued', 'analyzing', 'awaiting_purpose', 'scripting', 'rendering']);
+
+export function countActiveJobsForClient(clientId) {
+  let count = 0;
+  for (const job of jobs.values()) {
+    if (job.clientId === clientId && ACTIVE_STATUSES.has(job.status)) count++;
+  }
+  return count;
+}
+
+export function toPublicJob(job) {
+  if (!job) return null;
+  return {
+    id: job.id,
+    status: job.status,
+    stage: job.stage,
+    purpose: job.purpose,
+    product: job.product
+      ? {
+          name: job.product.name,
+          brand: job.product.brand,
+          price: job.product.price,
+          originalPrice: job.product.originalPrice,
+          currency: job.product.currency,
+          description: job.product.description,
+          images: job.product.images.slice(0, 3),
+          warnings: job.product.warnings,
+        }
+      : null,
+    error: job.error,
+    attempts: job.attempts,
+    createdAt: job.createdAt,
+    updatedAt: job.updatedAt,
+    downloadReady: job.status === 'completed' && !!job.outputPath && (!job.expiresAt || job.expiresAt > Date.now()),
+    expiresAt: job.expiresAt,
+  };
+}
+
+// 서버 재시작 후에도(사용자가 다시 접속했을 때) 이전 작업 상태를 확인할 수 있도록 디스크에서 복구한다.
+export async function loadJobsFromDisk() {
+  try {
+    await fs.mkdir(config.jobsDir, { recursive: true });
+    const files = await fs.readdir(config.jobsDir);
+    for (const file of files) {
+      if (!file.endsWith('.json')) continue;
+      try {
+        const raw = await fs.readFile(path.join(config.jobsDir, file), 'utf-8');
+        const job = JSON.parse(raw);
+        // 재시작 시점에 진행 중이던 작업은 재개할 수 없으므로 실패로 표시한다.
+        if (ACTIVE_STATUSES.has(job.status)) {
+          job.status = 'failed';
+          job.error = '서버가 재시작되어 작업이 중단됐어요. 다시 시도해주세요.';
+        }
+        jobs.set(job.id, job);
+      } catch {
+        // 손상된 파일은 건너뛴다.
+      }
+    }
+  } catch {
+    // 최초 실행이라 폴더가 없을 수 있다.
+  }
+}
+
+// 만료되었거나 오래된 작업의 임시 파일과 기록을 정리한다.
+export async function cleanupExpiredJobs() {
+  const now = Date.now();
+  for (const job of jobs.values()) {
+    const isTerminal = job.status === 'completed' || job.status === 'failed';
+    const expired = job.expiresAt && job.expiresAt < now;
+    const stale = isTerminal && now - job.updatedAt > config.outputExpiryMinutes * 60 * 1000 * 4;
+    if (!expired && !stale) continue;
+
+    if (job.outputPath && fssync.existsSync(job.outputPath)) {
+      await fs.rm(job.outputPath, { force: true }).catch(() => {});
+    }
+    const workDir = path.join(config.workDir, job.id);
+    await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
+
+    if (stale) {
+      jobs.delete(job.id);
+      await fs.rm(jobFilePath(job.id), { force: true }).catch(() => {});
+    } else if (expired && job.status === 'completed') {
+      updateJob(job.id, { outputPath: null });
+    }
+  }
+}
