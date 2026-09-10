@@ -1,6 +1,11 @@
 import * as cheerio from 'cheerio';
 
-const SKIP_IMAGE_PATTERN = /(icon|sprite|logo|blank|pixel|spinner|loading|placeholder|favicon|\.svg(\?|$))/i;
+// 상품 사진이 아니라 아이콘/버튼/배너처럼 화면 UI에 쓰이는 이미지를 걸러낸다.
+const SKIP_IMAGE_PATTERN = /(icon|sprite|logo|blank|pixel|spinner|loading|placeholder|favicon|btn|button|arrow|badge|banner|share|sns|kakao|naver_|instagram|facebook|payment|review_?star|cart|wish|close|top_?btn|scroll|nav_|header_|footer_|gnb|lnb|\.svg(\?|$))/i;
+// 상세페이지 안에서 실제 상품 사진/설명 이미지가 들어있을 만한 영역을 우선 찾는다
+// (Cafe24/고도몰/메이크샵 등 국내 쇼핑몰 빌더가 흔히 쓰는 클래스/아이디 이름 기준).
+const DETAIL_CONTAINER_SELECTOR =
+  '[id*="prdDetail" i], [class*="prdDetail" i], [class*="xans-product-detail" i], [class*="detail" i], [id*="detail" i], [class*="product-desc" i], [class*="productDesc" i]';
 const CTA_KEYWORDS = ['지금 구매', '바로구매', '구매하기', '장바구니', '지금 확인', '자세히 보기', 'buy now', 'shop now', 'add to cart', 'order now'];
 
 function toAbsoluteUrl(base, src) {
@@ -114,17 +119,26 @@ function extractOpenGraph($, baseUrl) {
 function extractMeta($, baseUrl) {
   const title = cleanText($('title').first().text(), 80) || null;
   const description = cleanText($('meta[name="description"]').attr('content'), 300) || null;
-  const images = [];
-  $('img').each((_, el) => {
-    if (images.length >= 12) return;
-    const src = $(el).attr('src') || $(el).attr('data-src');
-    if (!src || SKIP_IMAGE_PATTERN.test(src)) return;
-    const w = parseInt($(el).attr('width') || '0', 10);
-    const h = parseInt($(el).attr('height') || '0', 10);
-    if ((w && w < 120) || (h && h < 120)) return;
-    const abs = toAbsoluteUrl(baseUrl, src);
-    if (abs) images.push(abs);
-  });
+
+  function collectImages($scope) {
+    const found = [];
+    $scope.find('img').addBack('img').each((_, el) => {
+      if (found.length >= 12) return;
+      const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-original');
+      if (!src || SKIP_IMAGE_PATTERN.test(src)) return;
+      const w = parseInt($(el).attr('width') || '0', 10);
+      const h = parseInt($(el).attr('height') || '0', 10);
+      if ((w && w < 200) || (h && h < 200)) return;
+      const abs = toAbsoluteUrl(baseUrl, src);
+      if (abs) found.push(abs);
+    });
+    return found;
+  }
+
+  // 상세 설명 영역이 있으면 그 안의 이미지를 우선 쓰고(실제 상품 사진일 확률이 높음),
+  // 부족하면 페이지 전체에서 아이콘/버튼류를 걸러낸 이미지로 보충한다.
+  const detailImages = collectImages($(DETAIL_CONTAINER_SELECTOR));
+  const images = detailImages.length ? detailImages : collectImages($('body'));
   return { name: title, description, images };
 }
 
