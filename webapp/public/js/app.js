@@ -283,7 +283,7 @@
         resultVideo.src = src;
         downloadBtn.href = src;
         const name = (job.product?.name || 'shortform-ad').replace(/[^\w가-힣-]+/g, '_').slice(0, 40);
-        downloadBtn.setAttribute('download', `${name || 'shortform-ad'}.mp4`);
+        downloadBtn.setAttribute('download', `shorts studio_${name || 'shortform-ad'}.mp4`);
         showView('result');
         break;
       }
