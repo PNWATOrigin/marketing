@@ -341,7 +341,7 @@
     const url = urlInput.value.trim();
     if (!url || !selectedCategory) return;
     if (!isKoreanMallUrl(url)) {
-      setError(inputError, '한국 쇼핑몰 상품 URL만 지원해요. (.kr 도메인 또는 국내 쇼핑몰 플랫폼 주소)');
+      setError(inputError, '지원하지 않는 URL이에요. 다른 상품 URL로 다시 시도해주세요.');
       return;
     }
 

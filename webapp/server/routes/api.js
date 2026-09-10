@@ -65,7 +65,7 @@ router.post(
       return res.status(status).json({ error: err.message });
     }
     if (!isKoreanMallUrl(url)) {
-      return res.status(400).json({ error: '한국 쇼핑몰 상품 URL만 지원해요. (.kr 도메인 또는 국내 쇼핑몰 플랫폼 주소)' });
+      return res.status(400).json({ error: '지원하지 않는 URL이에요. 다른 상품 URL로 다시 시도해주세요.' });
     }
 
     const clientId = getClientId(req);
