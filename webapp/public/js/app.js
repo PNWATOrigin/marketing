@@ -28,7 +28,7 @@
       return false;
     }
     if (KOREAN_MALL_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) return true;
-    return host.endsWith('.co.kr');
+    return host.endsWith('.kr');
   }
 
   async function api(path, options = {}) {
