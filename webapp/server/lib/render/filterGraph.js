@@ -1,9 +1,23 @@
-const WIDTH=720, HEIGHT=1280, FPS=30;
+const WIDTH=1080, HEIGHT=1920, FPS=30;
+// 아래 레이아웃 값들은 720x1280 기준으로 만들어졌던 것을 1080x1920(WIDTH/HEIGHT)에 맞춰
+// 동일한 비율(1.5배)로 스케일링한 값이다. 실제 출력 해상도가 상품 정보 카드 등 다른 화면에
+// 노출되는 "1080x1920" 규격과 어긋나면 다운로드한 영상을 다른 곳에서 못 쓰는 문제가 생긴다.
+const SCALE = WIDTH / 720;
+const FG_H = Math.round(950 * SCALE);
+const OVERLAY_Y_BASE = Math.round(300 * SCALE);
+const OVERLAY_Y_SPAN = Math.round(850 * SCALE);
+const CAP_Y1 = Math.round(190 * SCALE);
+const CAP_Y2 = Math.round(254 * SCALE);
+const CAP_Y3 = Math.round(330 * SCALE);
+const TEXT_WIDTH_BUDGET = Math.round(610 * SCALE);
+const DECOR_FONT_SIZE = Math.round(30 * SCALE);
+const BORDER_W = Math.round(4 * SCALE);
+
 const escapePath=value=>String(value).replace(/\\/g,'/').replace(/:/g,'\\:').replace(/'/g,"'\\''");
-function size(text){return Math.min(48,Math.floor(610/Math.max(1,[...String(text)].length)));}
+function size(text){return Math.min(Math.round(48*SCALE),Math.floor(TEXT_WIDTH_BUDGET/Math.max(1,[...String(text)].length)));}
 function caption(text,file,font,y,duration,decoration=false){
  const source=file?`textfile='${escapePath(file)}'`:`text='${String(text).replace(/[\\':;\[\],]/g,' ')}'`;
- return `drawtext=fontfile='${escapePath(font)}':${source}:expansion=none:fontsize=${decoration?30:size(text)}:fontcolor=0xFFF1FA:borderw=4:bordercolor=0xF369B1:shadowcolor=0xEE68B0@0.6:shadowx=2:shadowy=3:x=(w-text_w)/2:y='${y}-10*exp(-12*t)*cos(18*t)':alpha='min(1,t/0.10)*min(1,(${duration}-t)/0.10)'`;
+ return `drawtext=fontfile='${escapePath(font)}':${source}:expansion=none:fontsize=${decoration?DECOR_FONT_SIZE:size(text)}:fontcolor=0xFFF1FA:borderw=${BORDER_W}:bordercolor=0xF369B1:shadowcolor=0xEE68B0@0.6:shadowx=2:shadowy=3:x=(w-text_w)/2:y='${y}-10*exp(-12*t)*cos(18*t)':alpha='min(1,t/0.10)*min(1,(${duration}-t)/0.10)'`;
 }
 export function buildRenderPlan({scenes,sceneImagePaths,fonts}){
  if(scenes.length!==sceneImagePaths.length)throw new Error('장면 수와 이미지 수가 다릅니다.');
@@ -11,12 +25,12 @@ export function buildRenderPlan({scenes,sceneImagePaths,fonts}){
  const filters=scenes.map((scene,i)=>{
  const frames=Math.round(scene.duration*FPS),z=i%2?`1.06-0.06*on/${frames}`:`1+0.06*on/${frames}`;
  return `[${i}:v]trim=end_frame=1,split[bg${i}][fg${i}];`+
- `[bg${i}]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,gblur=sigma=24,eq=brightness=-0.08[b${i}];`+
- `[fg${i}]scale=720:950:force_original_aspect_ratio=decrease[f${i}];`+
- `[b${i}][f${i}]overlay=(W-w)/2:300+(850-h)/2,zoompan=z='${z}':x='(iw-iw/zoom)/2':y='(ih-ih/zoom)/2':d=${frames}:s=720x1280:fps=30,setsar=1,`+
- caption(scene.headline,scene.textFiles?.headline,fonts.bold,190,scene.duration)+','+
- caption(scene.sub||'',scene.textFiles?.sub,fonts.bold,254,scene.duration)+','+
- caption('♡     ♡',null,fonts.bold,330,scene.duration,true)+`,format=yuv420p[v${i}]`;
+ `[bg${i}]scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=increase,crop=${WIDTH}:${HEIGHT},gblur=sigma=24,eq=brightness=-0.08[b${i}];`+
+ `[fg${i}]scale=${WIDTH}:${FG_H}:force_original_aspect_ratio=decrease[f${i}];`+
+ `[b${i}][f${i}]overlay=(W-w)/2:${OVERLAY_Y_BASE}+(${OVERLAY_Y_SPAN}-h)/2,zoompan=z='${z}':x='(iw-iw/zoom)/2':y='(ih-ih/zoom)/2':d=${frames}:s=${WIDTH}x${HEIGHT}:fps=30,setsar=1,`+
+ caption(scene.headline,scene.textFiles?.headline,fonts.bold,CAP_Y1,scene.duration)+','+
+ caption(scene.sub||'',scene.textFiles?.sub,fonts.bold,CAP_Y2,scene.duration)+','+
+ caption('♡     ♡',null,fonts.bold,CAP_Y3,scene.duration,true)+`,format=yuv420p[v${i}]`;
  });
  const totalDuration=scenes.reduce((n,s)=>n+s.duration,0);
  return {inputArgs,filterComplex:filters.join(';')+';'+scenes.map((_,i)=>`[v${i}]`).join('')+`concat=n=${scenes.length}:v=1:a=0,fade=t=out:st=${totalDuration-.25}:d=0.25[vout]`,outputLabel:'[vout]',totalDuration,width:WIDTH,height:HEIGHT,fps:FPS};
