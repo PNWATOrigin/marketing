@@ -21,12 +21,13 @@ async function persist(job) {
   }
 }
 
-export function createJob({ url, clientId }) {
+export function createJob({ url, category, clientId }) {
   const id = crypto.randomUUID();
   const now = Date.now();
   const job = {
     id,
     url,
+    category,
     clientId,
     status: 'queued',
     stage: 'queued',
@@ -87,6 +88,7 @@ export function toPublicJob(job) {
     status: job.status,
     stage: job.stage,
     progress: job.progress,
+    category: job.category,
     purpose: job.purpose,
     product: job.product
       ? {

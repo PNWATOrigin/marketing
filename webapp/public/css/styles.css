@@ -138,7 +138,34 @@ body {
 .url-form {
   display: flex;
   flex-direction: column;
+  flex-wrap: wrap;
   gap: 12px;
+}
+
+.category-group {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: center;
+}
+
+.category-chip {
+  flex: 1;
+  max-width: 180px;
+  padding: 12px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--mint-soft);
+  background: var(--white);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.category-chip.selected {
+  border-color: var(--emerald-dark);
+  background: rgba(52, 211, 153, 0.16);
 }
 
 @media (min-width: 520px) {

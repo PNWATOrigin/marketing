@@ -12,6 +12,20 @@
 
   const clientId = getClientId();
 
+  // 규칙 기반 한국 쇼핑몰 URL 검사 (AI 호출 없음). .kr 도메인이거나
+  // .kr이 아닌 국내 쇼핑몰 구축 플랫폼 도메인이면 통과시킨다.
+  const KOREAN_PLATFORM_DOMAINS = ['cafe24.com', 'imweb.me', 'godomall.com', 'sixshop.com'];
+  function isKoreanMallUrl(rawUrl) {
+    let host;
+    try {
+      host = new URL(rawUrl).hostname.toLowerCase();
+    } catch {
+      return false;
+    }
+    if (host.endsWith('.kr')) return true;
+    return KOREAN_PLATFORM_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
+  }
+
   async function api(path, options = {}) {
     const res = await fetch(`/api${path}`, {
       ...options,
@@ -54,6 +68,17 @@
   const urlForm = document.getElementById('url-form');
   const urlInput = document.getElementById('url-input');
   const submitBtn = document.getElementById('submit-btn');
+  const categoryGroup = document.getElementById('category-group');
+  let selectedCategory = null;
+
+  categoryGroup.querySelectorAll('.category-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      categoryGroup.querySelectorAll('.category-chip').forEach((c) => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      selectedCategory = chip.dataset.category;
+      submitBtn.disabled = false;
+    });
+  });
   const inputError = document.getElementById('input-error');
   const productSummary = document.getElementById('product-summary');
   const purposeGrid = document.getElementById('purpose-grid');
@@ -305,13 +330,17 @@
     e.preventDefault();
     setError(inputError, '');
     const url = urlInput.value.trim();
-    if (!url) return;
+    if (!url || !selectedCategory) return;
+    if (!isKoreanMallUrl(url)) {
+      setError(inputError, '한국 쇼핑몰 상품 URL만 지원해요. (.kr 도메인 또는 국내 쇼핑몰 플랫폼 주소)');
+      return;
+    }
 
     submitBtn.disabled = true;
     submitBtn.textContent = '분석 요청 중...';
     try {
       await loadPurposes();
-      const { job } = await api('/jobs', { method: 'POST', body: JSON.stringify({ url }) });
+      const { job } = await api('/jobs', { method: 'POST', body: JSON.stringify({ url, category: selectedCategory }) });
       persistJob(job.id, url);
       showView('analyzing');
       poll(job.id);

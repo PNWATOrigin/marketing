@@ -9,6 +9,22 @@ import { PURPOSES } from '../lib/script.js';
 
 export const router = express.Router();
 
+const CATEGORIES = new Set(['digital', 'health']);
+
+// 규칙 기반 한국 쇼핑몰 URL 검사 (AI 호출 없음). .kr 도메인이거나
+// .kr이 아닌 국내 쇼핑몰 구축 플랫폼 도메인이면 통과시킨다.
+const KOREAN_PLATFORM_DOMAINS = ['cafe24.com', 'imweb.me', 'godomall.com', 'sixshop.com'];
+function isKoreanMallUrl(rawUrl) {
+  let host;
+  try {
+    host = new URL(rawUrl).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  if (host.endsWith('.kr')) return true;
+  return KOREAN_PLATFORM_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
+}
+
 function getClientId(req) {
   const header = req.get('x-client-id');
   if (header && /^[a-zA-Z0-9_-]{8,64}$/.test(header)) return header;
@@ -26,9 +42,12 @@ router.get('/purposes', (req, res) => {
 router.post(
   '/jobs',
   asyncHandler(async (req, res) => {
-    const { url } = req.body || {};
+    const { url, category } = req.body || {};
     if (!url || typeof url !== 'string') {
       return res.status(400).json({ error: 'URL을 입력해주세요.' });
+    }
+    if (!CATEGORIES.has(category)) {
+      return res.status(400).json({ error: '카테고리를 선택해주세요.' });
     }
     try {
       assertSafeUrlFormat(url);
@@ -36,13 +55,16 @@ router.post(
       const status = err instanceof UnsafeUrlError ? 400 : 400;
       return res.status(status).json({ error: err.message });
     }
+    if (!isKoreanMallUrl(url)) {
+      return res.status(400).json({ error: '한국 쇼핑몰 상품 URL만 지원해요. (.kr 도메인 또는 국내 쇼핑몰 플랫폼 주소)' });
+    }
 
     const clientId = getClientId(req);
     if (countActiveJobsForClient(clientId) >= config.maxActiveJobsPerClient) {
       return res.status(429).json({ error: '이미 진행 중인 작업이 있어요. 완료 후 다시 시도해주세요.' });
     }
 
-    const job = createJob({ url, clientId });
+    const job = createJob({ url, category, clientId });
     enqueueAnalyze(job.id);
     res.status(201).json({ job: toPublicJob(job) });
   })
