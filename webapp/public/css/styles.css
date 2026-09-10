@@ -417,18 +417,18 @@ body {
 
 .product-summary {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   align-items: center;
   background: linear-gradient(160deg, #ffffff, #eff6ff);
-  border-radius: 999px;
-  padding: 10px 20px;
+  border-radius: 22px;
+  padding: 8px 16px;
   margin-bottom: 4px;
   border: 2px solid #93c5fd;
 }
 
 .product-summary img {
-  width: 96px;
-  height: 96px;
+  width: 72px;
+  height: 72px;
   object-fit: cover;
   border-radius: 14px;
   flex-shrink: 0;
@@ -448,8 +448,8 @@ body {
 .purpose-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 #start-render-btn {
@@ -467,10 +467,10 @@ body {
 
 .purpose-card {
   position: relative;
-  background: var(--white);
-  border: 2px solid rgba(236, 72, 153, 0.22);
-  border-radius: var(--radius-md);
-  padding: 22px 18px;
+  background: linear-gradient(160deg, #ffffff, #eff6ff);
+  border: 2px solid #93c5fd;
+  border-radius: 22px;
+  padding: 13px 16px 12px;
   text-align: left;
   cursor: pointer;
   opacity: 0;
@@ -512,16 +512,44 @@ body {
 }
 
 .purpose-card h3 {
-  margin: 0 0 8px;
-  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #dbeafe;
+  font-size: 0.98rem;
   font-weight: 800;
+  color: #7c3aed;
+}
+
+.badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #67e8f9, #f472b6);
+  color: white;
+  font-size: 0.85rem;
+  flex-shrink: 0;
 }
 
 .purpose-card ul {
   margin: 0;
-  padding-left: 18px;
+  padding-left: 0;
+  list-style: none;
   color: var(--muted);
   font-size: 0.86rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.purpose-card ul li::before {
+  content: '✦ ';
+  color: #f472b6;
 }
 
 .render-preview {

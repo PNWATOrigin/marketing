@@ -184,7 +184,7 @@
         (p) => `
         <button type="button" class="purpose-card" data-id="${p.id}" aria-pressed="false">
           <span class="check">✓</span>
-          <h3>${escapeHtml(p.label)}</h3>
+          <h3><span class="badge-icon">✦</span>${escapeHtml(p.label)}</h3>
           <ul>${p.metrics.map((m) => `<li>${escapeHtml(m)}</li>`).join('')}</ul>
         </button>`
       )
