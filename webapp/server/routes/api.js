@@ -3,7 +3,7 @@ import path from 'node:path';
 import express from 'express';
 import { config } from '../config.js';
 import { assertSafeUrlFormat, UnsafeUrlError } from '../lib/ssrf.js';
-import { createJob, getJob, toPublicJob, countActiveJobsForClient } from '../lib/jobStore.js';
+import { createJob, getJob, updateJob, toPublicJob, countActiveJobsForClient } from '../lib/jobStore.js';
 import { enqueueAnalyze, startJob, retryJob } from '../lib/jobManager.js';
 import { PURPOSES } from '../lib/script.js';
 
@@ -85,6 +85,23 @@ router.get(
     const job = getJob(req.params.id);
     if (!job) return res.status(404).json({ error: '작업을 찾을 수 없어요.' });
     res.json({ job: toPublicJob(job) });
+  })
+);
+
+router.post(
+  '/jobs/:id/cancel',
+  asyncHandler(async (req, res) => {
+    const job = getJob(req.params.id);
+    if (!job) return res.status(404).json({ error: '작업을 찾을 수 없어요.' });
+    if (job.clientId !== getClientId(req)) {
+      return res.status(403).json({ error: '이 작업에 접근할 수 없어요.' });
+    }
+    // 렌더링 시작 전 단계에서 사용자가 뒤로가기/처음으로 이동하면, 이 작업이 "진행 중"으로
+    // 계속 잡혀 다음 작업 생성이 막히지 않도록 취소 처리한다.
+    if (['queued', 'analyzing', 'awaiting_purpose'].includes(job.status)) {
+      updateJob(job.id, { status: 'failed', stage: 'cancelled', error: '사용자가 취소함' });
+    }
+    res.json({ ok: true });
   })
 );
 

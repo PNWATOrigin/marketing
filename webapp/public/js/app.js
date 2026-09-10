@@ -324,6 +324,10 @@
   }
 
   function clearJob() {
+    if (currentJobId) {
+      // 렌더링 시작 전 단계에서 나가는 경우, 서버에 취소를 알려 "진행 중" 슬롯을 비워준다.
+      api(`/jobs/${currentJobId}/cancel`, { method: 'POST' }).catch(() => {});
+    }
     currentJobId = null;
     selectedPurpose = null;
     localStorage.removeItem(STORAGE_KEYS.jobId);
