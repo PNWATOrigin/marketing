@@ -113,15 +113,65 @@ body {
   font-size: 1.5rem;
 }
 
-.logo-mark {
-  font-size: 1.8rem;
+.logo-badge {
+  position: relative;
+  display: inline-flex;
+  padding: 10px 34px;
+}
+
+.logo-ring {
+  display: none;
+}
+
+.logo-stack {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.logo-star {
+  position: absolute;
+  color: var(--emerald-dark);
+  z-index: 2;
+}
+
+.ls-1 {
+  top: -6px;
+  right: 2px;
+  font-size: 1.2rem;
+}
+
+.ls-2 {
+  bottom: 10px;
+  left: 4px;
+  font-size: 0.75rem;
+  color: var(--mint);
+}
+
+.ls-3 {
+  bottom: 2px;
+  right: 6px;
+  font-size: 0.8rem;
 }
 
 .logo-text {
+  font-size: 1.9rem;
   color: var(--mint);
-  -webkit-text-stroke: 2px var(--emerald-dark);
+  -webkit-text-stroke: 3px var(--emerald-dark);
   text-shadow: 0 3px 0 var(--emerald-dark), 0 5px 8px rgba(74, 4, 78, 0.25);
   letter-spacing: 0.5px;
+}
+
+.logo-sub {
+  margin-top: -2px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--white);
+  -webkit-text-stroke: 2px var(--emerald-dark);
+  text-shadow: 0 2px 0 var(--emerald-dark);
 }
 
 .tagline {
