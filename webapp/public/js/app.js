@@ -187,6 +187,7 @@
         <button type="button" class="purpose-card" data-id="${p.id}" aria-pressed="false">
           <span class="check">✓</span>
           <img class="purpose-card-img" src="/img/card-${p.id}.png" alt="${escapeHtml(p.label)}" />
+          <span class="purpose-card-compact"><span class="badge-icon">✦</span>${escapeHtml(p.label)}</span>
         </button>`
       )
       .join('');

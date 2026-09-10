@@ -499,6 +499,10 @@ body {
   border-radius: 22px;
 }
 
+.purpose-card-compact {
+  display: none;
+}
+
 .purpose-card .check {
   position: absolute;
   top: 14px;
@@ -682,6 +686,46 @@ body {
   .site-footer {
     padding: 6px 20px 10px;
   }
+
+  /* 목적 카드 3개는 모바일에서 이미지 대신 스크롤 없이 들어가는 작은 선택 칩으로 표시 */
+  .purpose-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .purpose-card-img {
+    display: none;
+  }
+  .purpose-card-compact {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 4px;
+    border: 2px solid #93c5fd;
+    border-radius: 16px;
+    background: linear-gradient(160deg, #ffffff, #eff6ff);
+    color: #7c3aed;
+    font-weight: 800;
+    font-size: 0.68rem;
+    line-height: 1.2;
+    text-align: center;
+  }
+  .purpose-card.selected .purpose-card-compact {
+    border-color: var(--emerald-dark);
+  }
+}
+
+.badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #67e8f9, #f472b6);
+  color: white;
+  font-size: 0.68rem;
+  flex-shrink: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
