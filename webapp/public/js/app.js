@@ -28,7 +28,7 @@
       return false;
     }
     if (KOREAN_MALL_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) return true;
-    return host.endsWith('.co.kr');
+    return host.endsWith('.kr');
   }
 
   async function api(path, options = {}) {
@@ -186,7 +186,7 @@
         (p) => `
         <button type="button" class="purpose-card" data-id="${p.id}" aria-pressed="false">
           <span class="check">✓</span>
-          <h3>${escapeHtml(p.label)}</h3>
+          <h3><span class="badge-icon">✦</span>${escapeHtml(p.label)}</h3>
           <ul>${p.metrics.map((m) => `<li>${escapeHtml(m)}</li>`).join('')}</ul>
         </button>`
       )
@@ -326,6 +326,10 @@
   }
 
   function clearJob() {
+    if (currentJobId) {
+      // 렌더링 시작 전 단계에서 나가는 경우, 서버에 취소를 알려 "진행 중" 슬롯을 비워준다.
+      api(`/jobs/${currentJobId}/cancel`, { method: 'POST' }).catch(() => {});
+    }
     currentJobId = null;
     selectedPurpose = null;
     localStorage.removeItem(STORAGE_KEYS.jobId);
@@ -398,6 +402,8 @@
 
   startOverBtn.addEventListener('click', resetToInput);
   remakeBtn.addEventListener('click', resetToInput);
+  document.getElementById('logo-home-btn').addEventListener('click', resetToInput);
+  document.getElementById('purpose-back-btn').addEventListener('click', resetToInput);
 
   // --- 초기 로드: 이전에 진행 중이던 작업이 있으면 이어서 확인한다 ---
   (async function init() {

@@ -3,7 +3,7 @@ import path from 'node:path';
 import express from 'express';
 import { config } from '../config.js';
 import { assertSafeUrlFormat, UnsafeUrlError } from '../lib/ssrf.js';
-import { createJob, getJob, toPublicJob, countActiveJobsForClient } from '../lib/jobStore.js';
+import { createJob, getJob, updateJob, toPublicJob, countActiveJobsForClient } from '../lib/jobStore.js';
 import { enqueueAnalyze, startJob, retryJob } from '../lib/jobManager.js';
 import { PURPOSES } from '../lib/script.js';
 
@@ -11,9 +11,8 @@ export const router = express.Router();
 
 const CATEGORIES = new Set(['auto', 'digital', 'health']);
 
-// 규칙 기반 국내 쇼핑몰 URL 검사 (AI 호출 없음). .kr 도메인 여부가 아니라
-// 실제 국내 쇼핑몰/오픈마켓/TV홈쇼핑/자사몰 구축 플랫폼 도메인 목록으로 판단한다.
-// 목록에 없는 정상 쇼핑몰이 있으면 이 배열에 도메인만 추가하면 된다.
+// 규칙 기반 국내 쇼핑몰 URL 검사 (AI 호출 없음). 주요 오픈마켓/홈쇼핑/자사몰 플랫폼은
+// 도메인 목록으로 우선 판단하고, 목록에 없는 개별 브랜드 자사몰은 .kr 도메인이면 허용한다.
 const KOREAN_MALL_DOMAINS = [
   // 오픈마켓 · 종합몰
   'coupang.com', 'gmarket.co.kr', 'auction.co.kr', '11st.co.kr', 'ssg.com',
@@ -32,7 +31,7 @@ function isKoreanMallUrl(rawUrl) {
     return false;
   }
   if (KOREAN_MALL_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) return true;
-  return host.endsWith('.co.kr'); // 개별 브랜드 자사몰은 대부분 .co.kr을 쓰므로 마지막 안전망으로 허용
+  return host.endsWith('.kr'); // 국내 쇼핑몰 자사몰 도메인은 대부분 .kr을 쓰므로 마지막 안전망으로 허용
 }
 
 function getClientId(req) {
@@ -86,6 +85,23 @@ router.get(
     const job = getJob(req.params.id);
     if (!job) return res.status(404).json({ error: '작업을 찾을 수 없어요.' });
     res.json({ job: toPublicJob(job) });
+  })
+);
+
+router.post(
+  '/jobs/:id/cancel',
+  asyncHandler(async (req, res) => {
+    const job = getJob(req.params.id);
+    if (!job) return res.status(404).json({ error: '작업을 찾을 수 없어요.' });
+    if (job.clientId !== getClientId(req)) {
+      return res.status(403).json({ error: '이 작업에 접근할 수 없어요.' });
+    }
+    // 렌더링 시작 전 단계에서 사용자가 뒤로가기/처음으로 이동하면, 이 작업이 "진행 중"으로
+    // 계속 잡혀 다음 작업 생성이 막히지 않도록 취소 처리한다.
+    if (['queued', 'analyzing', 'awaiting_purpose'].includes(job.status)) {
+      updateJob(job.id, { status: 'failed', stage: 'cancelled', error: '사용자가 취소함' });
+    }
+    res.json({ ok: true });
   })
 );
 
