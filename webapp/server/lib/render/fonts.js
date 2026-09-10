@@ -1,7 +1,12 @@
 import fssync from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const FONTS_DIR = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../../assets/fonts');
 
 const BOLD_CANDIDATES = [
   process.env.FONT_BOLD_PATH,
+  path.join(FONTS_DIR, 'Paperlogy-Bold.ttf'),
   '/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc',
   '/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc',
   '/usr/share/fonts/opentype/noto/NotoSansCJKkr-Bold.otf',
@@ -10,6 +15,7 @@ const BOLD_CANDIDATES = [
 
 const REGULAR_CANDIDATES = [
   process.env.FONT_REGULAR_PATH,
+  path.join(FONTS_DIR, 'Paperlogy-Regular.ttf'),
   '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
   '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
   '/usr/share/fonts/opentype/noto/NotoSansCJKkr-Regular.otf',

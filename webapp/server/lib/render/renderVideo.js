@@ -75,6 +75,8 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress }
     '-t',
     plan.totalDuration.toFixed(2),
     '-map', `${sceneImagePaths.length}:a`,
+    // 배경음악이 영상 길이에 맞춰 자연스럽게 끝나도록 페이드아웃하고, 자막이 잘 들리도록 볼륨을 낮춘다.
+    '-af', `volume=0.55,afade=t=out:st=${Math.max(0, plan.totalDuration - 0.4).toFixed(2)}:d=0.4`,
     '-c:a', 'aac', '-b:a', '96k',
     '-c:v',
     'libx264',

@@ -23,14 +23,16 @@ export function buildRenderPlan({scenes,sceneImagePaths,fonts}){
  if(scenes.length!==sceneImagePaths.length)throw new Error('장면 수와 이미지 수가 다릅니다.');
  const inputArgs=sceneImagePaths.flatMap(p=>['-i',p]);
  const filters=scenes.map((scene,i)=>{
- const frames=Math.round(scene.duration*FPS),z=i%2?`1.06-0.06*on/${frames}`:`1+0.06*on/${frames}`;
+ const frames=Math.round(scene.duration*FPS);
  return `[${i}:v]trim=end_frame=1,split[bg${i}][fg${i}];`+
  `[bg${i}]scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=increase,crop=${WIDTH}:${HEIGHT},gblur=sigma=24,eq=brightness=-0.08[b${i}];`+
  `[fg${i}]scale=${WIDTH}:${FG_H}:force_original_aspect_ratio=decrease[f${i}];`+
- `[b${i}][f${i}]overlay=(W-w)/2:${OVERLAY_Y_BASE}+(${OVERLAY_Y_SPAN}-h)/2,zoompan=z='${z}':x='(iw-iw/zoom)/2':y='(ih-ih/zoom)/2':d=${frames}:s=${WIDTH}x${HEIGHT}:fps=30,setsar=1,`+
+ // zoompan은 정지 이미지를 프레임마다 다시 계산해서 미세하게 떨려 보이는 문제가 있어,
+ // 대신 합성된 한 프레임을 그대로 붙잡아두는(loop) 방식으로 흔들림 없이 고정한다.
+ `[b${i}][f${i}]overlay=(W-w)/2:${OVERLAY_Y_BASE}+(${OVERLAY_Y_SPAN}-h)/2,loop=loop=${frames - 1}:size=1:start=0,fps=${FPS},setsar=1,`+
  caption(scene.headline,scene.textFiles?.headline,fonts.bold,CAP_Y1,scene.duration)+','+
  caption(scene.sub||'',scene.textFiles?.sub,fonts.bold,CAP_Y2,scene.duration)+','+
- caption('♡     ♡',null,fonts.bold,CAP_Y3,scene.duration,true)+`,format=yuv420p[v${i}]`;
+ caption('●     ●',null,fonts.bold,CAP_Y3,scene.duration,true)+`,format=yuv420p[v${i}]`;
  });
  const totalDuration=scenes.reduce((n,s)=>n+s.duration,0);
  return {inputArgs,filterComplex:filters.join(';')+';'+scenes.map((_,i)=>`[v${i}]`).join('')+`concat=n=${scenes.length}:v=1:a=0,fade=t=out:st=${totalDuration-.25}:d=0.25[vout]`,outputLabel:'[vout]',totalDuration,width:WIDTH,height:HEIGHT,fps:FPS};
