@@ -238,8 +238,10 @@ export function analyzeHtml(html, pageUrl) {
 
   const fromJsonLd = extractFromJsonLdProduct(jsonLdProduct, pageUrl);
   const fromOg = extractOpenGraph($, pageUrl);
+  // "함께 본 상품"/추천 상품 영역은 이 상품이 아닌 다른 상품 사진이 섞여 들어오는
+  // 원인이라 이미지/텍스트를 뽑기 전에 통째로 제거한다.
+  $('style, script, nav, header, footer, [class*="relate" i], [id*="relate" i], [class*="recommend" i], [id*="recommend" i], [class*="other_goods" i], [class*="otherGoods" i]').remove();
   const fromMeta = extractMeta($, pageUrl);
-  $('style, script, nav, header, footer').remove();
   const bodyHints = extractBodyHints($);
 
   let name = fromJsonLd.name || fromOg.name || fromMeta.name || null;
