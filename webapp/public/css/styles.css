@@ -642,6 +642,46 @@ body {
   margin: 1px 0;
 }
 
+/* 모바일은 주소창 표시/숨김에 따라 vh가 흔들려 레이아웃이 들썩이므로,
+   좁은 화면에서는 vh 대신 고정값으로 되돌려 안정적으로 표시한다. */
+@media (max-width: 480px) {
+  .site-header {
+    padding: 4px 20px 0;
+  }
+  .logo-img {
+    height: 120px;
+  }
+  .app-shell {
+    padding: 4px 20px;
+  }
+  .card {
+    padding: 8px 28px;
+  }
+  .heading-img {
+    max-width: 340px;
+  }
+  .heading-purpose-img {
+    max-width: 340px;
+  }
+  #start-render-btn {
+    max-width: 320px;
+  }
+  .result-heading-img {
+    margin: 2px auto 6px;
+    max-width: 260px;
+  }
+  .video-frame {
+    max-width: 115px;
+    margin: 0 auto 6px;
+  }
+  .result-actions .btn {
+    padding: 10px 26px;
+  }
+  .site-footer {
+    padding: 6px 20px 10px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
