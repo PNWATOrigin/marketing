@@ -33,7 +33,7 @@
     <!-- 1. URL 입력 -->
     <section id="view-input" class="view view-input">
       <div class="card hero-card">
-        <h1>상품 URL을 입력하세요</h1>
+        <h1><img class="heading-img" src="/img/heading.png" alt="상품 URL을 입력하세요" /></h1>
         <p class="hero-sub">상품명, 가격, 이미지, 특징을 자동으로 분석해서 영상을 만들어요.</p>
         <form id="url-form" class="url-form">
           <input
@@ -48,7 +48,9 @@
             <button type="button" class="category-chip" data-category="digital">디지털/가전</button>
             <button type="button" class="category-chip" data-category="health">건강기능식품</button>
           </div>
-          <button type="submit" id="submit-btn" class="btn btn-primary" disabled>영상 만들기</button>
+          <button type="submit" id="submit-btn" class="btn btn-img" disabled>
+            <img src="/img/btn-submit.png" alt="영상 만들기" />
+          </button>
         </form>
         <p class="hint-text">국내 쇼핑몰 상품 URL만 지원해요. 앱 전용 링크는 분석이 안 될 수 있어요.</p>
         <p class="hint-text">영상 제작에는 보통 1~3분 정도 걸려요.</p>
@@ -116,6 +118,7 @@
 
   <footer class="site-footer">
     <p>모든 영상은 9:16 · 1080×1920 · MP4(H.264)로 만들어져요.</p>
+    <p>© 2026 PNWAT. All Rights Reserved.</p>
   </footer>
 
   <script src="/js/app.js"></script>
