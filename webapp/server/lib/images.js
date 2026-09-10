@@ -32,34 +32,43 @@ async function analyzeImage(filePath) {
   }
 }
 
-// 사진이 아니라 글자/로고 위주의 배너인지 판별한다. 실제 상품·모델 사진은 배경이
-// 단순해도 피사체 때문에 색이 다양한 반면, 글자/로고 이미지는 배경색+글자색 등
-// 소수의 색만으로 픽셀 대부분을 채운다 - 아주 작게 축소한 뒤 색 분포를 보고 판별한다.
+// 사진이 아니라 글자/로고 위주의 배너인지 판별한다. 실제 상품 상세 이미지는 큰 배경색
+// 블록이나 안내 문구가 섞여 있어도 상품·모델을 담은 영역만큼은 자연광/노이즈 때문에
+// 아주 작은 구역 안에서도 색이 미세하게 계속 바뀌는 반면, 글자 획이나 단색 배경은
+// (안티에일리어싱 경계를 빼면) 구역 안 색이 몇 가지로 고정된다. 이미지를 잘게 나눈
+// 구역 단위로 이 "사진다움"을 측정해서, 이미지 전체가 아니라 일부만 사진이어도
+// (문구+상품 사진을 함께 넣은 상세 이미지처럼) 그 사진 영역이 충분하면 채택한다.
 async function isPhotographic(filePath) {
+  const SIZE = 96;
+  const GRID = 24; // SIZE를 GRID로 나눈 4x4px 구역 단위로 색 다양성을 본다
+  const BLOCK = SIZE / GRID;
+  const MIN_COLORS_PER_BLOCK = 10; // 이보다 많은 색이 한 구역에 있으면 "사진 같은" 구역
+  const MIN_PHOTO_AREA_RATIO = 0.1; // 전체 구역 중 이 비율 이상이 사진 같아야 채택
   try {
     const { stdout } = await exec(
       config.ffmpegPath,
-      ['-v', 'error', '-i', filePath, '-vf', 'scale=48:48', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'],
+      ['-v', 'error', '-i', filePath, '-vf', `scale=${SIZE}:${SIZE}`, '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'],
       { timeout: 5000, encoding: 'buffer', maxBuffer: 1024 * 1024 }
     );
     const pixels = stdout;
-    const total = pixels.length / 3;
-    if (!total) return true;
-    const counts = new Map();
-    for (let i = 0; i < pixels.length; i += 3) {
-      // 4bit/채널로 양자화해서 안티에일리어싱으로 인한 미세한 색 차이를 뭉친다.
-      const key = ((pixels[i] >> 4) << 8) | ((pixels[i + 1] >> 4) << 4) | (pixels[i + 2] >> 4);
-      counts.set(key, (counts.get(key) || 0) + 1);
+    if (pixels.length < SIZE * SIZE * 3) return true; // 해상도가 예상과 다르면 분석을 건너뛰고 통과시킨다
+
+    let photoBlocks = 0;
+    for (let by = 0; by < GRID; by += 1) {
+      for (let bx = 0; bx < GRID; bx += 1) {
+        const colors = new Set();
+        for (let y = 0; y < BLOCK; y += 1) {
+          for (let x = 0; x < BLOCK; x += 1) {
+            const idx = ((by * BLOCK + y) * SIZE + (bx * BLOCK + x)) * 3;
+            // 7bit/채널로 촘촘히 양자화해 자연스러운 색 변화를 촘촘하게 구분한다.
+            const key = ((pixels[idx] >> 1) << 14) | ((pixels[idx + 1] >> 1) << 7) | (pixels[idx + 2] >> 1);
+            colors.add(key);
+          }
+        }
+        if (colors.size > MIN_COLORS_PER_BLOCK) photoBlocks += 1;
+      }
     }
-    const sorted = [...counts.values()].sort((a, b) => b - a);
-    let covered = 0;
-    let colorsFor90 = 0;
-    for (const c of sorted) {
-      covered += c;
-      colorsFor90 += 1;
-      if (covered / total >= 0.9) break;
-    }
-    return colorsFor90 > 4; // 4가지 이하 색으로 90% 이상 채워지면 글자/로고 배너로 판단
+    return photoBlocks / (GRID * GRID) >= MIN_PHOTO_AREA_RATIO;
   } catch {
     return true; // 분석에 실패하면 기존처럼 통과시켜 렌더링 자체는 막지 않는다.
   }
