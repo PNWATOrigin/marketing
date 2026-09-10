@@ -32,6 +32,39 @@ async function analyzeImage(filePath) {
   }
 }
 
+// 사진이 아니라 글자/로고 위주의 배너인지 판별한다. 실제 상품·모델 사진은 배경이
+// 단순해도 피사체 때문에 색이 다양한 반면, 글자/로고 이미지는 배경색+글자색 등
+// 소수의 색만으로 픽셀 대부분을 채운다 - 아주 작게 축소한 뒤 색 분포를 보고 판별한다.
+async function isPhotographic(filePath) {
+  try {
+    const { stdout } = await exec(
+      config.ffmpegPath,
+      ['-v', 'error', '-i', filePath, '-vf', 'scale=48:48', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'],
+      { timeout: 5000, encoding: 'buffer', maxBuffer: 1024 * 1024 }
+    );
+    const pixels = stdout;
+    const total = pixels.length / 3;
+    if (!total) return true;
+    const counts = new Map();
+    for (let i = 0; i < pixels.length; i += 3) {
+      // 4bit/채널로 양자화해서 안티에일리어싱으로 인한 미세한 색 차이를 뭉친다.
+      const key = ((pixels[i] >> 4) << 8) | ((pixels[i + 1] >> 4) << 4) | (pixels[i + 2] >> 4);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    const sorted = [...counts.values()].sort((a, b) => b - a);
+    let covered = 0;
+    let colorsFor90 = 0;
+    for (const c of sorted) {
+      covered += c;
+      colorsFor90 += 1;
+      if (covered / total >= 0.9) break;
+    }
+    return colorsFor90 > 4; // 4가지 이하 색으로 90% 이상 채워지면 글자/로고 배너로 판단
+  } catch {
+    return true; // 분석에 실패하면 기존처럼 통과시켜 렌더링 자체는 막지 않는다.
+  }
+}
+
 // 세로로 아주 긴 "상세페이지" 이미지를 균등한 여러 조각으로 잘라 각각을 독립된 이미지
 // 파일로 저장한다. 조각 하나 실패해도 나머지 조각으로 계속 진행한다.
 async function sliceTallImage(filePath, destDir, index, w, h) {
@@ -108,7 +141,16 @@ async function downloadOne(url, destDir, index) {
     if (info.verdict === 'slice') {
       const slices = await sliceTallImage(filePath, destDir, index, info.w, info.h);
       await fs.rm(filePath, { force: true });
-      return slices;
+      const photoSlices = [];
+      for (const slicePath of slices) {
+        if (await isPhotographic(slicePath)) photoSlices.push(slicePath);
+        else await fs.rm(slicePath, { force: true });
+      }
+      return photoSlices;
+    }
+    if (!(await isPhotographic(filePath))) {
+      await fs.rm(filePath, { force: true });
+      return [];
     }
     return [filePath];
   } catch {
