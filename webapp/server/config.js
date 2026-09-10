@@ -29,6 +29,11 @@ export const config = {
   // 인코딩(최대 150초) + 여유분을 더해도 3분 밑으로 떨어지게 잡은 값.
   renderTimeoutMs: int('RENDER_TIMEOUT_MS', 150000),
 
+  // 상세 이미지 텍스트 인식(OCR)/배경 제거(누끼) 기능의 이미지당 타임아웃. 실패해도
+  // 최선 노력으로 건너뛰고 상품 분석/렌더링 자체는 계속 진행된다.
+  ocrTimeoutMs: int('OCR_TIMEOUT_MS', 6000),
+  cutoutTimeoutMs: int('CUTOUT_TIMEOUT_MS', 12000),
+
   maxHtmlBytes: int('MAX_HTML_BYTES', 3 * 1024 * 1024),
   maxImageBytes: int('MAX_IMAGE_BYTES', 8 * 1024 * 1024),
   maxImages: int('MAX_IMAGES', 6),

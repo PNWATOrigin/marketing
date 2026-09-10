@@ -9,6 +9,9 @@ import { downloadImages } from './images.js';
 import { generateScript, PURPOSES } from './script.js';
 import { renderVideo } from './render/renderVideo.js';
 import { UnsafeUrlError } from './ssrf.js';
+import { ocrImage, extractCleanLines } from './ocr.js';
+import { cutoutOnBackground } from './cutout.js';
+import { ensureGradientBackground } from './render/gradient.js';
 
 const analyzeQueue = new ConcurrencyQueue(config.maxAnalyzeConcurrency);
 const renderQueue = new ConcurrencyQueue(config.maxRenderConcurrency);
@@ -34,6 +37,24 @@ export function enqueueRender(jobId) {
   renderQueue.push(() => runRender(jobId).finally(() => inFlight.delete(key)));
 }
 
+// 상세 이미지 1~2장을 내려받아 OCR로 읽고, 짧고 깨끗해 보이는 줄만 추가 특징으로 반영한다.
+// 무료 로컬 OCR이라 완벽하지 않을 수 있어 최선 노력으로만 동작하고, 실패해도 상품 분석
+// 자체는 계속 진행된다(정보를 지어내지 않는다는 원칙을 지키기 위해 애매한 줄은 버림).
+async function enrichWithImageText(product, workDir) {
+  try {
+    const targets = (product.images || []).slice(0, 2);
+    if (!targets.length) return;
+    const imagePaths = await downloadImages(targets, workDir, { max: 2 });
+    const texts = await Promise.all(imagePaths.map((p) => ocrImage(p, config.ocrTimeoutMs)));
+    const lines = extractCleanLines(texts.join('\n'), 4 - (product.features?.length || 0));
+    if (lines.length) product.features = [...(product.features || []), ...lines].slice(0, 4);
+  } catch {
+    // OCR은 부가 기능이므로 실패해도 무시한다.
+  } finally {
+    await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 async function runAnalyze(jobId) {
   const job = getJob(jobId);
   if (!job) return;
@@ -41,6 +62,7 @@ async function runAnalyze(jobId) {
   try {
     const { html, finalUrl } = await fetchProductPage(job.url);
     const product = analyzeHtml(html, finalUrl);
+    await enrichWithImageText(product, path.join(config.workDir, jobId, 'ocr'));
     updateJob(jobId, { status: 'awaiting_purpose', stage: 'awaiting_purpose', product });
   } catch (err) {
     updateJob(jobId, { status: 'failed', stage: 'analyzing', error: friendlyError(err) });
@@ -67,6 +89,27 @@ function startProgressWatchdog(jobId) {
   return { report, stop: () => clearInterval(timer) };
 }
 
+// 상세 이미지 배경을 무료 로컬 모델(rembg)로 "누끼"딴 뒤 브랜드 그라데이션 배경 위에
+// 합성해서, 원본 사진 대신 깔끔한 컷아웃 이미지를 장면에 쓸 수 있게 한다. 이미지별로
+// 최선 노력이라 실패하면 그냥 원본 이미지 경로를 그대로 둔다(전체를 막지 않음).
+async function applyCutouts(imagePaths, workDir) {
+  const targets = imagePaths.slice(0, 3);
+  try {
+    const bg = await ensureGradientBackground();
+    const results = await Promise.all(
+      targets.map(async (imgPath, i) => {
+        const outPath = path.join(workDir, `cutout_${i}.jpg`);
+        return cutoutOnBackground(imgPath, outPath, bg).catch(() => null);
+      })
+    );
+    results.forEach((outPath, i) => {
+      if (outPath) imagePaths[i] = outPath;
+    });
+  } catch {
+    // 누끼 기능은 부가 기능이므로 실패해도 원본 이미지로 계속 진행한다.
+  }
+}
+
 // 실패 시 큐에 다시 넣지 않고 같은 작업 슬롯 안에서 바로 재시도한다.
 // (재시도를 enqueueRender로 다시 큐에 넣으면, 이 함수를 감싸는 최초 호출의 finally가
 //  방금 등록된 inFlight 표시를 지워버려 중복 실행 방지 장치가 깨지는 문제가 있었다.)
@@ -87,6 +130,7 @@ async function runRender(jobId) {
       const imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
         onEach: (done, total) => watchdog.report(total ? Math.round((done / total) * 10) : 0),
       });
+      await applyCutouts(imagePaths, path.join(workDir, 'images'));
 
       await fs.mkdir(config.outputDir, { recursive: true });
       const outputPath = path.join(config.outputDir, `${jobId}.mp4`);
