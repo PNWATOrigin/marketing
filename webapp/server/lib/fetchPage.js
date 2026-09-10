@@ -31,11 +31,23 @@ function toFriendlyFetchError(err) {
   return new PageFetchError(friendly || '페이지를 불러오지 못했어요. URL을 다시 확인해주세요.', 'FETCH_FAILED');
 }
 
+// HTTP 헤더에 charset이 없으면 <meta charset=...> 선언을 찾는다. charset 이름 자체는
+// 항상 ASCII라서, 실제 인코딩을 모르는 상태에서도 원본 바이트를 latin1으로 읽어 안전하게
+// 찾아낼 수 있다.
+function sniffCharsetFromMeta(body) {
+  const head = body.subarray(0, Math.min(body.length, 4096)).toString('latin1');
+  const match = /<meta[^>]+charset=["']?\s*([\w-]+)/i.exec(head);
+  return match?.[1]?.trim().toLowerCase();
+}
+
+// 국내 쇼핑몰(특히 오래된 자사몰)은 여전히 EUC-KR로 서비스하는 경우가 많다. EUC-KR은
+// 한글을 2바이트로 표현하는 인코딩이라 latin1(1바이트=1문자)로 읽으면 글자가 깨진다 -
+// TextDecoder로 실제 EUC-KR 디코딩을 해야 한다.
 function decodeBody(body, contentType) {
-  const match = /charset=([^;]+)/i.exec(contentType || '');
-  const charset = (match?.[1] || 'utf-8').trim().toLowerCase();
+  const headerCharset = /charset=([^;]+)/i.exec(contentType || '')?.[1]?.trim().toLowerCase();
+  const charset = headerCharset || sniffCharsetFromMeta(body) || 'utf-8';
   try {
-    return body.toString(charset === 'euc-kr' || charset === 'ks_c_5601-1987' ? 'latin1' : charset);
+    return new TextDecoder(charset).decode(body);
   } catch {
     return body.toString('utf-8');
   }
