@@ -74,9 +74,7 @@
   const urlInput = document.getElementById('url-input');
   const submitBtn = document.getElementById('submit-btn');
   const categoryGroup = document.getElementById('category-group');
-  let selectedCategory = 'auto';
-  submitBtn.disabled = false;
-  categoryGroup.hidden = true;
+  let selectedCategory = null;
 
   categoryGroup.querySelectorAll('.category-chip').forEach((chip) => {
     chip.addEventListener('click', () => {

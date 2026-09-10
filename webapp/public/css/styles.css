@@ -626,7 +626,7 @@ body {
 
 .result-actions .btn {
   flex: 1;
-  max-width: 200px;
+  max-width: 260px;
 }
 
 .result-actions .btn {
@@ -670,7 +670,7 @@ body {
     max-width: 340px;
   }
   #start-render-btn {
-    max-width: 380px;
+    max-width: 100%;
   }
   .result-heading-img {
     margin: 2px auto 10px;
