@@ -427,8 +427,8 @@ body {
 }
 
 .product-summary img {
-  width: 72px;
-  height: 72px;
+  width: 112px;
+  height: 112px;
   object-fit: cover;
   border-radius: 14px;
   flex-shrink: 0;
@@ -467,15 +467,14 @@ body {
 
 .purpose-card {
   position: relative;
-  background: linear-gradient(160deg, #ffffff, #eff6ff);
-  border: 2px solid #93c5fd;
+  background: none;
+  border: none;
   border-radius: 22px;
-  padding: 13px 16px 12px;
-  text-align: left;
+  padding: 0;
   cursor: pointer;
   opacity: 0;
   transform: translateY(16px) scale(0.96);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease;
+  transition: box-shadow 0.2s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease;
 }
 
 .purpose-card.show {
@@ -488,8 +487,14 @@ body {
 }
 
 .purpose-card.selected {
-  border-color: var(--emerald-dark);
-  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.28);
+  box-shadow: 0 0 0 3px var(--emerald-dark);
+}
+
+.purpose-card-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 22px;
 }
 
 .purpose-card .check {
@@ -509,31 +514,6 @@ body {
 
 .purpose-card.selected .check {
   display: flex;
-}
-
-.purpose-card h3 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 6px;
-  padding-bottom: 6px;
-  border-bottom: 2px solid #dbeafe;
-  font-size: 0.98rem;
-  font-weight: 800;
-  color: #7c3aed;
-}
-
-.badge-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: linear-gradient(160deg, #67e8f9, #f472b6);
-  color: white;
-  font-size: 0.85rem;
-  flex-shrink: 0;
 }
 
 .purpose-card ul {
