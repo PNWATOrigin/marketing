@@ -10,6 +10,13 @@ function pickSceneImages(scenes, imagePaths, gradientPath) {
   return scenes.map((_, i) => imagePaths[i % imagePaths.length]);
 }
 
+// 목적(조회수/판매전환/브랜드인지도)마다 분위기가 다른 배경음악을 미리 만들어두고 골라 쓴다.
+// 매번 새로 생성하지 않아 빠르고, 외부 API 비용도 들지 않는다.
+const BGM_BY_PURPOSE = { views: 'views.mp3', sales: 'sales.mp3', brand: 'brand.mp3' };
+function pickBgm(purpose) {
+  return path.join(config.rootDir, 'assets', 'bgm', BGM_BY_PURPOSE[purpose] || 'sales.mp3');
+}
+
 async function verifyOutput(outputPath, expectedDuration) {
   const stdout = await runFfprobe([
     '-v',
@@ -44,7 +51,7 @@ async function verifyOutput(outputPath, expectedDuration) {
  * 이미지가 부족하면(0장 포함) 민트→화이트 그라데이션 배경으로 대체해서
  * 이미지 문제만으로 전체 렌더링이 실패하지 않게 한다.
  */
-export async function renderVideo({ scenes, imagePaths, outputPath, onProgress }) {
+export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, purpose }) {
   const fonts = resolveFonts();
   const gradientPath = null;
   const sceneImagePaths = pickSceneImages(scenes, imagePaths, gradientPath);
@@ -64,7 +71,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress }
     '-loglevel',
     'error',
     ...plan.inputArgs,
-    '-i', path.join(config.rootDir, 'assets', 'pink-pop.mp3'),
+    '-i', pickBgm(purpose),
     '-filter_complex_threads', '1',
     '-filter_complex',
     plan.filterComplex,

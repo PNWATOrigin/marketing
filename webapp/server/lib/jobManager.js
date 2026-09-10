@@ -138,6 +138,7 @@ async function runRender(jobId) {
         scenes: script.scenes,
         imagePaths,
         outputPath,
+        purpose: job.purpose,
         onProgress: (fraction) => watchdog.report(Math.round(10 + fraction * 90)),
       });
       const { size } = await fs.stat(outputPath);
