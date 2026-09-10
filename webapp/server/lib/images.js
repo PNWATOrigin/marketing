@@ -1,7 +1,31 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { config } from '../config.js';
 import { safeFetch } from './safeHttp.js';
+
+const exec = promisify(execFile);
+
+// HTML의 width/height 속성은 없거나(지연 로딩) 부정확한 경우가 많아, 실제로 내려받은
+// 이미지 파일을 열어 픽셀 크기를 확인한다. 너무 작거나(아이콘/구분선) 가로세로 비율이
+// 극단적인(얇은 배너/구분선) 이미지는 상품 사진이 아닐 가능성이 커서 제외한다.
+async function isLikelyProductPhoto(filePath) {
+  try {
+    const { stdout } = await exec(
+      config.ffprobePath,
+      ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0:s=x', filePath],
+      { timeout: 4000 }
+    );
+    const [w, h] = stdout.trim().split('x').map(Number);
+    if (!w || !h) return false;
+    if (w < 300 || h < 300) return false;
+    if (Math.max(w, h) / Math.min(w, h) > 4) return false;
+    return true;
+  } catch {
+    return true; // 분석에 실패하면(포맷 미지원 등) 기존처럼 통과시켜 렌더링 자체는 막지 않는다.
+  }
+}
 
 const EXT_BY_MIME = {
   'image/jpeg': '.jpg',
@@ -42,6 +66,10 @@ async function downloadOne(url, destDir, index) {
 
     const filePath = path.join(destDir, `img_${index}${ext}`);
     await fs.writeFile(filePath, res.body);
+    if (!(await isLikelyProductPhoto(filePath))) {
+      await fs.rm(filePath, { force: true });
+      return null;
+    }
     return filePath;
   } catch {
     return null; // 이 이미지는 건너뛰고 나머지 이미지로 계속 진행한다.
