@@ -48,7 +48,19 @@ function popAlphaExpr(delay, duration) {
   );
 }
 
-function drawText({ text, fontPath, fontSize, y, color = COLOR.darkGreen, delay, duration, box = true, boxColor = '0xFFFFFF@0.6', bold = false }) {
+function drawText({
+  text,
+  fontPath,
+  fontSize,
+  y,
+  color = COLOR.darkGreen,
+  delay,
+  duration,
+  box = true,
+  boxColor = '0xFFFFFF@0.6',
+  borderColor,
+  borderWidth = 0,
+}) {
   const alpha = popAlphaExpr(delay, duration);
   const parts = [
     `fontfile='${fontPath}'`,
@@ -62,6 +74,9 @@ function drawText({ text, fontPath, fontSize, y, color = COLOR.darkGreen, delay,
   ];
   if (box) {
     parts.push('box=1', `boxcolor=${boxColor}`, 'boxborderw=22');
+  }
+  if (borderColor && borderWidth > 0) {
+    parts.push(`borderw=${borderWidth}`, `bordercolor=${borderColor}`);
   }
   return `drawtext=${parts.join(':')}`;
 }
@@ -112,14 +127,17 @@ function buildSceneFilter(scene, index, fonts) {
     cursor += 0.1;
   }
 
+  // 숏폼 감성의 "네온 팝업 자막" 스타일: 배경 박스 대신 굵은 컬러 테두리로 강조한다.
   layers.push(
     drawText({
       text: scene.headline,
       fontPath: fonts.bold,
       fontSize: headlineFontSize(scene.headline),
       y: HEADLINE_Y,
-      color: COLOR.darkGreen,
-      boxColor: `${COLOR.white}@0.62`,
+      color: COLOR.white,
+      box: false,
+      borderColor: COLOR.emerald,
+      borderWidth: 14,
       delay: cursor,
       duration,
     })
@@ -148,11 +166,13 @@ function buildSceneFilter(scene, index, fonts) {
     layers.push(
       drawText({
         text: scene.sub,
-        fontPath: fonts.regular,
+        fontPath: fonts.bold,
         fontSize: subFontSize(scene.sub),
         y: nextY,
-        color: COLOR.darkGreen,
-        boxColor: `${COLOR.white}@0.55`,
+        color: COLOR.white,
+        box: false,
+        borderColor: COLOR.darkGreen,
+        borderWidth: 8,
         delay: cursor,
         duration,
       })
