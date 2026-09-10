@@ -165,6 +165,52 @@ function dedupeImages(images, max) {
   return [...new Set(images.filter(Boolean))].slice(0, max);
 }
 
+// 최근 국내 쇼핑몰(특히 TV홈쇼핑·SPA 기반 사이트)은 상품 정보를 서버 HTML이 아니라
+// window.__NEXT_DATA__ / __INITIAL_STATE__ 같은 초기 상태 JSON으로 내려주기도 한다.
+// JSON-LD/OG/메타에서 못 찾은 항목만 이 값으로 최후 보완한다 (없는 내용을 지어내지 않음).
+const EMBEDDED_STATE_PATTERNS = [
+  /(?:window\.)?__NEXT_DATA__\s*=\s*(\{[\s\S]*?\})\s*(?:<\/script>|;\s*(?:window\.)?__)/i,
+  /(?:window\.)?__(?:INITIAL_STATE__|NUXT__|PRELOADED_STATE__|APOLLO_STATE__)\s*=\s*(\{[\s\S]*?\})\s*;?\s*<\/script>/i,
+];
+
+function findEmbeddedState(html) {
+  for (const pattern of EMBEDDED_STATE_PATTERNS) {
+    const match = pattern.exec(html);
+    if (!match) continue;
+    try {
+      return JSON.parse(match[1]);
+    } catch {
+      // 잘라낸 조각이 온전한 JSON이 아니면 건너뛴다.
+    }
+  }
+  return null;
+}
+
+// 얕은 우선 탐색으로 이름/가격/이미지처럼 보이는 값을 찾는다. 노드 수를 제한해 성능을 보호한다.
+function scanEmbeddedState(state) {
+  const found = { name: null, price: null, image: null };
+  const queue = [state];
+  let visited = 0;
+  while (queue.length && visited < 3000) {
+    const node = queue.shift();
+    visited += 1;
+    if (!node || typeof node !== 'object') continue;
+    for (const [key, value] of Object.entries(node)) {
+      const k = key.toLowerCase();
+      if (!found.name && typeof value === 'string' && /^(goodsname|productname|itemname|name|title)$/.test(k) && value.length > 1) {
+        found.name = value;
+      } else if (!found.price && typeof value === 'number' && /price/.test(k) && value > 0) {
+        found.price = value;
+      } else if (!found.image && typeof value === 'string' && /^(image|imageurl|thumbnail|mainimage|thumbimg)$/.test(k) && /^https?:\/\//.test(value)) {
+        found.image = value;
+      } else if (value && typeof value === 'object') {
+        queue.push(value);
+      }
+    }
+  }
+  return found;
+}
+
 /**
  * HTML을 분석해서 상품 정보를 추출한다.
  * 우선순위: JSON-LD Product > Open Graph > 메타데이터 > 본문 텍스트 휴리스틱
@@ -180,14 +226,26 @@ export function analyzeHtml(html, pageUrl) {
   const fromMeta = extractMeta($, pageUrl);
   const bodyHints = extractBodyHints($);
 
-  const name = fromJsonLd.name || fromOg.name || fromMeta.name || null;
+  let name = fromJsonLd.name || fromOg.name || fromMeta.name || null;
   const brand = fromJsonLd.brand || fromOg.brand || null;
   const description = fromJsonLd.description || fromOg.description || fromMeta.description || null;
-  const price = fromJsonLd.price ?? fromOg.price ?? bodyHints.price ?? null;
+  let price = fromJsonLd.price ?? fromOg.price ?? bodyHints.price ?? null;
   const originalPrice = fromJsonLd.originalPrice ?? bodyHints.originalPrice ?? null;
-  const currency = fromJsonLd.currency || fromOg.currency || (price != null ? 'KRW' : null);
 
   const images = dedupeImages([...fromJsonLd.images, ...fromOg.images, ...fromMeta.images], 12);
+
+  // JSON-LD/OG/메타로 이름·가격·이미지를 하나도 못 찾았을 때만 SPA 임베디드 상태를 확인한다.
+  if (!name || price == null || images.length === 0) {
+    const state = findEmbeddedState(html);
+    if (state) {
+      const hint = scanEmbeddedState(state);
+      if (!name && hint.name) name = cleanText(hint.name, 80);
+      if (price == null && hint.price) price = hint.price;
+      if (images.length === 0 && hint.image) images.push(hint.image);
+    }
+  }
+
+  const currency = fromJsonLd.currency || fromOg.currency || (price != null ? 'KRW' : null);
 
   const warnings = [];
   if (!name) warnings.push('상품명을 찾지 못했어요.');

@@ -11,9 +11,19 @@ export const router = express.Router();
 
 const CATEGORIES = new Set(['digital', 'health']);
 
-// 규칙 기반 한국 쇼핑몰 URL 검사 (AI 호출 없음). .kr 도메인이거나
-// .kr이 아닌 국내 쇼핑몰 구축 플랫폼 도메인이면 통과시킨다.
-const KOREAN_PLATFORM_DOMAINS = ['cafe24.com', 'imweb.me', 'godomall.com', 'sixshop.com'];
+// 규칙 기반 국내 쇼핑몰 URL 검사 (AI 호출 없음). .kr 도메인 여부가 아니라
+// 실제 국내 쇼핑몰/오픈마켓/TV홈쇼핑/자사몰 구축 플랫폼 도메인 목록으로 판단한다.
+// 목록에 없는 정상 쇼핑몰이 있으면 이 배열에 도메인만 추가하면 된다.
+const KOREAN_MALL_DOMAINS = [
+  // 오픈마켓 · 종합몰
+  'coupang.com', 'gmarket.co.kr', 'auction.co.kr', '11st.co.kr', 'ssg.com',
+  'lotteon.com', 'lotteimall.com', 'tmon.co.kr', 'wemakeprice.com', 'interpark.com',
+  'oliveyoung.co.kr', 'musinsa.com', 'kurly.com', 'naver.com',
+  // TV홈쇼핑
+  'shinsegaetvshopping.com', 'gsshop.com', 'hmall.com', 'cjonstyle.com', 'nsmall.com',
+  // 자사몰 구축 플랫폼(이 도메인의 하위 도메인/직접 도메인 모두 허용)
+  'cafe24.com', 'imweb.me', 'godomall.com', 'sixshop.com', 'makeshop.co.kr',
+];
 function isKoreanMallUrl(rawUrl) {
   let host;
   try {
@@ -21,8 +31,8 @@ function isKoreanMallUrl(rawUrl) {
   } catch {
     return false;
   }
-  if (host.endsWith('.kr')) return true;
-  return KOREAN_PLATFORM_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
+  if (KOREAN_MALL_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) return true;
+  return host.endsWith('.co.kr'); // 개별 브랜드 자사몰은 대부분 .co.kr을 쓰므로 마지막 안전망으로 허용
 }
 
 function getClientId(req) {

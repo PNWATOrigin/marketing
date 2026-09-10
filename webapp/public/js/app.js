@@ -12,9 +12,14 @@
 
   const clientId = getClientId();
 
-  // 규칙 기반 한국 쇼핑몰 URL 검사 (AI 호출 없음). .kr 도메인이거나
-  // .kr이 아닌 국내 쇼핑몰 구축 플랫폼 도메인이면 통과시킨다.
-  const KOREAN_PLATFORM_DOMAINS = ['cafe24.com', 'imweb.me', 'godomall.com', 'sixshop.com'];
+  // 규칙 기반 국내 쇼핑몰 URL 검사 (AI 호출 없음, 서버와 동일한 규칙).
+  const KOREAN_MALL_DOMAINS = [
+    'coupang.com', 'gmarket.co.kr', 'auction.co.kr', '11st.co.kr', 'ssg.com',
+    'lotteon.com', 'lotteimall.com', 'tmon.co.kr', 'wemakeprice.com', 'interpark.com',
+    'oliveyoung.co.kr', 'musinsa.com', 'kurly.com', 'naver.com',
+    'shinsegaetvshopping.com', 'gsshop.com', 'hmall.com', 'cjonstyle.com', 'nsmall.com',
+    'cafe24.com', 'imweb.me', 'godomall.com', 'sixshop.com', 'makeshop.co.kr',
+  ];
   function isKoreanMallUrl(rawUrl) {
     let host;
     try {
@@ -22,8 +27,8 @@
     } catch {
       return false;
     }
-    if (host.endsWith('.kr')) return true;
-    return KOREAN_PLATFORM_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
+    if (KOREAN_MALL_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) return true;
+    return host.endsWith('.co.kr');
   }
 
   async function api(path, options = {}) {

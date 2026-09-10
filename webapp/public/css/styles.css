@@ -168,10 +168,10 @@ body {
   background: rgba(52, 211, 153, 0.16);
 }
 
-@media (min-width: 520px) {
-  .url-form {
-    flex-direction: row;
-  }
+#submit-btn {
+  align-self: center;
+  width: 100%;
+  max-width: 280px;
 }
 
 #url-input {
