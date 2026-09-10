@@ -396,6 +396,8 @@
 
   startOverBtn.addEventListener('click', resetToInput);
   remakeBtn.addEventListener('click', resetToInput);
+  document.getElementById('logo-home-btn').addEventListener('click', resetToInput);
+  document.getElementById('purpose-back-btn').addEventListener('click', resetToInput);
 
   // --- 초기 로드: 이전에 진행 중이던 작업이 있으면 이어서 확인한다 ---
   (async function init() {

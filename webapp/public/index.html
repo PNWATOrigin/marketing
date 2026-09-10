@@ -9,7 +9,9 @@
 </head>
 <body>
   <header class="site-header">
-    <img class="logo-img" src="/img/logo.png" alt="숏폼 스튜디오 — 상품 URL 하나로, 15초 영상 완성" />
+    <button type="button" id="logo-home-btn" class="logo-btn" aria-label="처음으로 돌아가기">
+      <img class="logo-img" src="/img/logo.png" alt="숏폼 스튜디오 — 상품 URL 하나로, 15초 영상 완성" />
+    </button>
   </header>
 
   <main class="app-shell">
@@ -54,6 +56,7 @@
 
     <!-- 3. 목적 선택 -->
     <section id="view-purpose" class="view view-purpose" hidden>
+      <button type="button" id="purpose-back-btn" class="nav-back-btn">← 이전</button>
       <div class="product-summary" id="product-summary"></div>
       <h2 class="section-title">어떤 목적의 영상을 만들까요?</h2>
       <p class="section-sub">하나만 선택할 수 있어요. 목적에 따라 HOOK과 CTA가 달라져요.</p>

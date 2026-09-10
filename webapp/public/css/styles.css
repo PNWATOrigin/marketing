@@ -112,6 +112,23 @@ body {
   width: auto;
 }
 
+.logo-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.nav-back-btn {
+  background: none;
+  border: none;
+  color: var(--emerald-dark);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 6px 0 10px;
+}
+
 .tagline {
   margin: 10px auto 0;
   max-width: 480px;
@@ -553,6 +570,29 @@ body {
 
 .site-footer p {
   margin: 1px 0;
+}
+
+@media (max-height: 700px) {
+  .site-header {
+    padding-top: 4px;
+  }
+  .app-shell {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .card {
+    padding: 10px 20px;
+  }
+  .hero-card h1 {
+    margin-bottom: 2px;
+  }
+  .hint-list {
+    margin-top: 4px;
+    gap: 0;
+  }
+  .site-footer {
+    padding-bottom: 4px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
