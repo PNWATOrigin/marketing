@@ -348,7 +348,6 @@
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = '분석 요청 중...';
     try {
       await loadPurposes();
       const { job } = await api('/jobs', { method: 'POST', body: JSON.stringify({ url, category: selectedCategory }) });
@@ -359,7 +358,6 @@
       setError(inputError, err.message);
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = '영상 만들기';
     }
   });
 
