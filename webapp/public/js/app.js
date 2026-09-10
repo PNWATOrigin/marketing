@@ -16,7 +16,7 @@
   const KOREAN_MALL_DOMAINS = [
     'coupang.com', 'gmarket.co.kr', 'auction.co.kr', '11st.co.kr', 'ssg.com',
     'lotteon.com', 'lotteimall.com', 'tmon.co.kr', 'wemakeprice.com', 'interpark.com',
-    'oliveyoung.co.kr', 'musinsa.com', 'kurly.com', 'naver.com',
+    'oliveyoung.co.kr', 'musinsa.com', 'kurly.com', 'naver.com', 'ohou.se',
     'shinsegaetvshopping.com', 'gsshop.com', 'hmall.com', 'cjonstyle.com', 'nsmall.com',
     'cafe24.com', 'imweb.me', 'godomall.com', 'sixshop.com', 'makeshop.co.kr',
   ];
@@ -74,7 +74,9 @@
   const urlInput = document.getElementById('url-input');
   const submitBtn = document.getElementById('submit-btn');
   const categoryGroup = document.getElementById('category-group');
-  let selectedCategory = null;
+  let selectedCategory = 'auto';
+  submitBtn.disabled = false;
+  categoryGroup.hidden = true;
 
   categoryGroup.querySelectorAll('.category-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
@@ -159,7 +161,7 @@
     }
     const img = product.images?.[0];
     productSummary.innerHTML = `
-      ${img ? `<img src="${img}" alt="" onerror="this.remove()" />` : ''}
+      ${img ? `<img src="${escapeHtml(img)}" alt="" onerror="this.remove()" />` : ''}
       <div>
         <div class="ps-name">${escapeHtml(product.name || '상품명을 확인하지 못했어요')}</div>
         ${product.brand ? `<div class="ps-meta">${escapeHtml(product.brand)}</div>` : ''}

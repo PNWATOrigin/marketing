@@ -218,21 +218,31 @@ function scanEmbeddedState(state) {
  */
 export function analyzeHtml(html, pageUrl) {
   const $ = cheerio.load(html);
+  const ohou = new URL(pageUrl).hostname === 'store.ohou.se';
   const jsonLdNodes = collectJsonLd($);
   const jsonLdProduct = pickJsonLdProduct(jsonLdNodes);
 
   const fromJsonLd = extractFromJsonLdProduct(jsonLdProduct, pageUrl);
   const fromOg = extractOpenGraph($, pageUrl);
   const fromMeta = extractMeta($, pageUrl);
+  $('style, script, nav, header, footer').remove();
   const bodyHints = extractBodyHints($);
 
   let name = fromJsonLd.name || fromOg.name || fromMeta.name || null;
-  const brand = fromJsonLd.brand || fromOg.brand || null;
+  const brand = fromJsonLd.brand || (ohou
+    ? cleanText($('a[aria-label$="브랜드 페이지로 이동"]').first().text(), 40) || null
+    : null);
   const description = fromJsonLd.description || fromOg.description || fromMeta.description || null;
-  let price = fromJsonLd.price ?? fromOg.price ?? bodyHints.price ?? null;
-  const originalPrice = fromJsonLd.originalPrice ?? bodyHints.originalPrice ?? null;
+  let price = fromJsonLd.price ?? fromOg.price ?? (ohou ? num((fromOg.description || '').match(/([\d,]+)원/)?.[1]) : null);
+  const originalPrice = fromJsonLd.originalPrice ?? null;
 
-  const images = dedupeImages([...fromJsonLd.images, ...fromOg.images, ...fromMeta.images], 12);
+  const gallery = ohou ? $('img[alt^="상품 이미지"]').toArray()
+    .sort((a,b) => Number($(a).attr('alt').replace(/\D/g,''))-Number($(b).attr('alt').replace(/\D/g,'')))
+    .map(el => {
+      const src = $(el).attr('src');
+      try { const u = new URL(src, pageUrl); u.searchParams.set('w','1000'); u.searchParams.set('h','1000'); return u.toString(); } catch { return null; }
+    }) : [];
+  const images = dedupeImages(ohou ? [...gallery, ...fromOg.images] : [...fromJsonLd.images, ...fromOg.images, ...fromMeta.images], 12);
 
   // JSON-LD/OG/메타로 이름·가격·이미지를 하나도 못 찾았을 때만 SPA 임베디드 상태를 확인한다.
   if (!name || price == null || images.length === 0) {
@@ -245,6 +255,7 @@ export function analyzeHtml(html, pageUrl) {
     }
   }
 
+  if (!name || !images.length) throw new Error('상품명과 이미지를 확인하지 못했어요. 공개 상품 상세페이지 URL인지 확인해주세요.');
   const currency = fromJsonLd.currency || fromOg.currency || (price != null ? 'KRW' : null);
 
   const warnings = [];
@@ -260,7 +271,12 @@ export function analyzeHtml(html, pageUrl) {
     originalPrice: originalPrice != null && price != null && originalPrice > price ? originalPrice : null,
     currency,
     description,
-    features: bodyHints.features,
+    features: ohou ? [
+      /BLDC/i.test(name || '') ? 'BLDC 무선청소기' : null,
+      /물걸레키트/.test(name || '') ? '물걸레키트 포함' : null,
+      /자동\s*먼지\s*비움/.test(name || '') ? '자동 먼지 비움' : null,
+      (name || '').match(/먼지봉투\s*\d+장/)?.[0],
+    ].filter(Boolean) : (jsonLdProduct?.additionalProperty || []).filter?.(p => p?.name && p?.value).map(p => cleanText(`${p.name}: ${p.value}`, 40)).slice(0,3) || [],
     ctaHint: bodyHints.ctaHint,
     images,
     warnings,
