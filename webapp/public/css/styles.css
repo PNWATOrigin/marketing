@@ -348,6 +348,42 @@ body {
   animation: spin 0.9s linear infinite;
 }
 
+.analyzing-wrap {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.analyzing-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 32px;
+}
+
+.spin-cover {
+  position: absolute;
+  left: 45%;
+  top: 19%;
+  width: 9.5%;
+  height: 28.4%;
+  border-radius: 50%;
+  background: #ebf9fe;
+}
+
+.spin-ring {
+  position: absolute;
+  left: 46.25%;
+  top: 22%;
+  width: 7.5%;
+  height: 22.4%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #67e8f9, #f472b6, #67e8f9);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 8px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 8px));
+  animation: spin 1.1s linear infinite;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -521,9 +557,10 @@ body {
 
 .progress-track {
   width: 100%;
-  height: 12px;
+  height: 14px;
   border-radius: 999px;
-  background: rgba(236, 72, 153, 0.18);
+  background: linear-gradient(160deg, #ffffff, #eff6ff);
+  border: 2px solid #93c5fd;
   overflow: hidden;
   margin-bottom: 20px;
 }
