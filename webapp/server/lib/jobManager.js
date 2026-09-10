@@ -42,9 +42,11 @@ export function enqueueRender(jobId) {
 // 자체는 계속 진행된다(정보를 지어내지 않는다는 원칙을 지키기 위해 애매한 줄은 버림).
 async function enrichWithImageText(product, workDir) {
   try {
-    const targets = (product.images || []).slice(0, 2);
+    // 세로로 긴 "상세페이지" 이미지 한 장이 여러 조각으로 잘릴 수 있어 후보 URL을
+    // 넉넉히 잡고, 실제 OCR 대상 수는 따로 제한해 전체 처리 시간을 지킨다.
+    const targets = (product.images || []).slice(0, 4);
     if (!targets.length) return;
-    const imagePaths = await downloadImages(targets, workDir, { max: 2 });
+    const imagePaths = (await downloadImages(targets, workDir, { max: 4 })).slice(0, 6);
     const texts = await Promise.all(imagePaths.map((p) => ocrImage(p, config.ocrTimeoutMs)));
     const lines = extractCleanLines(texts.join('\n'), 4 - (product.features?.length || 0));
     if (lines.length) product.features = [...(product.features || []), ...lines].slice(0, 4);

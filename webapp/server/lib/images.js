@@ -8,9 +8,11 @@ import { safeFetch } from './safeHttp.js';
 const exec = promisify(execFile);
 
 // HTML의 width/height 속성은 없거나(지연 로딩) 부정확한 경우가 많아, 실제로 내려받은
-// 이미지 파일을 열어 픽셀 크기를 확인한다. 너무 작거나(아이콘/구분선) 가로세로 비율이
-// 극단적인(얇은 배너/구분선) 이미지는 상품 사진이 아닐 가능성이 커서 제외한다.
-async function isLikelyProductPhoto(filePath) {
+// 이미지 파일을 열어 픽셀 크기를 확인한다. 너무 작거나(아이콘/구분선) 가로로 긴 극단적인
+// 비율(얇은 배너/구분선)은 상품 사진이 아닐 가능성이 커서 제외한다. 반대로 세로로 아주 긴
+// 이미지는 "상세페이지" 전체를 이어붙인 이미지인 경우가 많아 - 버리지 않고 여러 장으로
+// 잘라서(slice) 각각을 후보 이미지로 쓴다.
+async function analyzeImage(filePath) {
   try {
     const { stdout } = await exec(
       config.ffprobePath,
@@ -18,13 +20,42 @@ async function isLikelyProductPhoto(filePath) {
       { timeout: 4000 }
     );
     const [w, h] = stdout.trim().split('x').map(Number);
-    if (!w || !h) return false;
-    if (w < 300 || h < 300) return false;
-    if (Math.max(w, h) / Math.min(w, h) > 4) return false;
-    return true;
+    if (!w || !h) return { verdict: 'reject' };
+    if (w < 300 || h < 300) return { verdict: 'reject' };
+    if (Math.max(w, h) / Math.min(w, h) > 4) {
+      if (h > w) return { verdict: 'slice', w, h };
+      return { verdict: 'reject' }; // 가로로 긴 얇은 배너/구분선
+    }
+    return { verdict: 'keep' };
   } catch {
-    return true; // 분석에 실패하면(포맷 미지원 등) 기존처럼 통과시켜 렌더링 자체는 막지 않는다.
+    return { verdict: 'keep' }; // 분석에 실패하면(포맷 미지원 등) 기존처럼 통과시켜 렌더링 자체는 막지 않는다.
   }
+}
+
+// 세로로 아주 긴 "상세페이지" 이미지를 균등한 여러 조각으로 잘라 각각을 독립된 이미지
+// 파일로 저장한다. 조각 하나 실패해도 나머지 조각으로 계속 진행한다.
+async function sliceTallImage(filePath, destDir, index, w, h) {
+  const idealSliceHeight = Math.round(w * 1.6); // 세로로 긴 장면(9:16)에 가까운 비율
+  const numSlices = Math.min(4, Math.max(2, Math.round(h / idealSliceHeight)));
+  const sliceHeight = Math.floor(h / numSlices);
+  const ext = path.extname(filePath);
+
+  const outputs = [];
+  for (let i = 0; i < numSlices; i += 1) {
+    const y = i * sliceHeight;
+    const outPath = path.join(destDir, `img_${index}_slice${i}${ext}`);
+    try {
+      await exec(
+        config.ffmpegPath,
+        ['-y', '-i', filePath, '-vf', `crop=${w}:${sliceHeight}:0:${y}`, '-frames:v', '1', outPath],
+        { timeout: 6000 }
+      );
+      outputs.push(outPath);
+    } catch {
+      // 이 조각만 건너뛰고 나머지 조각으로 계속 진행한다.
+    }
+  }
+  return outputs;
 }
 
 const EXT_BY_MIME = {
@@ -48,6 +79,8 @@ function withDeadline(promise, ms) {
   return Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(null), ms))]);
 }
 
+// 반환값은 배열이다: 이미지 하나가 그대로 채택되면 원소 1개, "상세페이지"처럼 세로로
+// 아주 긴 이미지라 여러 조각으로 잘리면 원소 여러 개, 제외되면 빈 배열이 된다.
 async function downloadOne(url, destDir, index) {
   try {
     const res = await withDeadline(
@@ -58,21 +91,28 @@ async function downloadOne(url, destDir, index) {
       }),
       config.imageTimeoutMs + 3000
     );
-    if (!res || res.status >= 400) return null;
+    if (!res || res.status >= 400) return [];
     const contentType = (res.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
     const ext = EXT_BY_MIME[contentType];
-    if (!ext) return null; // 이미지가 아닌 응답은 건너뛴다
-    if (!res.body || res.body.length < 200) return null; // 지나치게 작은(깨진) 이미지는 제외
+    if (!ext) return []; // 이미지가 아닌 응답은 건너뛴다
+    if (!res.body || res.body.length < 200) return []; // 지나치게 작은(깨진) 이미지는 제외
 
     const filePath = path.join(destDir, `img_${index}${ext}`);
     await fs.writeFile(filePath, res.body);
-    if (!(await isLikelyProductPhoto(filePath))) {
+
+    const info = await analyzeImage(filePath);
+    if (info.verdict === 'reject') {
       await fs.rm(filePath, { force: true });
-      return null;
+      return [];
     }
-    return filePath;
+    if (info.verdict === 'slice') {
+      const slices = await sliceTallImage(filePath, destDir, index, info.w, info.h);
+      await fs.rm(filePath, { force: true });
+      return slices;
+    }
+    return [filePath];
   } catch {
-    return null; // 이 이미지는 건너뛰고 나머지 이미지로 계속 진행한다.
+    return []; // 이 이미지는 건너뛰고 나머지 이미지로 계속 진행한다.
   }
 }
 
@@ -86,7 +126,7 @@ export async function downloadImages(urls, destDir, { max = config.maxImages, on
   const targets = urls.slice(0, max); // 순차 재시도가 없으니 후보를 과하게 늘릴 필요가 없다
 
   let done = 0;
-  const paths = await Promise.all(
+  const results = await Promise.all(
     targets.map(async (url, i) => {
       const result = await downloadOne(url, destDir, i);
       done += 1;
@@ -94,5 +134,5 @@ export async function downloadImages(urls, destDir, { max = config.maxImages, on
       return result;
     })
   );
-  return paths.filter(Boolean);
+  return results.flat();
 }
