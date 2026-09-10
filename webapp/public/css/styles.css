@@ -455,7 +455,7 @@ body {
 #start-render-btn {
   display: block;
   width: 100%;
-  max-width: clamp(280px, 48vh, 440px);
+  max-width: clamp(300px, 58vh, 520px);
   margin: 0 auto;
 }
 
