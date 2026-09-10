@@ -162,7 +162,7 @@
       ${img ? `<img src="${img}" alt="" onerror="this.remove()" />` : ''}
       <div>
         <div class="ps-name">${escapeHtml(product.name || '상품명을 확인하지 못했어요')}</div>
-        <div class="ps-meta">${product.brand ? escapeHtml(product.brand) : '추가 정보 없음'}</div>
+        ${product.brand ? `<div class="ps-meta">${escapeHtml(product.brand)}</div>` : ''}
       </div>
     `;
   }

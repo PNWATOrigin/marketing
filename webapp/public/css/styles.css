@@ -307,10 +307,10 @@ body {
 }
 
 .product-summary img {
-  width: 56px;
-  height: 56px;
+  width: 96px;
+  height: 96px;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: 14px;
   flex-shrink: 0;
   background: var(--mint-soft);
 }
