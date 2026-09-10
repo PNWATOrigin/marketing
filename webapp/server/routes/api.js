@@ -9,7 +9,7 @@ import { PURPOSES } from '../lib/script.js';
 
 export const router = express.Router();
 
-const CATEGORIES = new Set(['digital', 'health']);
+const CATEGORIES = new Set(['auto', 'digital', 'health']);
 
 // 규칙 기반 국내 쇼핑몰 URL 검사 (AI 호출 없음). 주요 오픈마켓/홈쇼핑/자사몰 플랫폼은
 // 도메인 목록으로 우선 판단하고, 목록에 없는 개별 브랜드 자사몰은 .kr 도메인이면 허용한다.
@@ -17,7 +17,7 @@ const KOREAN_MALL_DOMAINS = [
   // 오픈마켓 · 종합몰
   'coupang.com', 'gmarket.co.kr', 'auction.co.kr', '11st.co.kr', 'ssg.com',
   'lotteon.com', 'lotteimall.com', 'tmon.co.kr', 'wemakeprice.com', 'interpark.com',
-  'oliveyoung.co.kr', 'musinsa.com', 'kurly.com', 'naver.com',
+  'oliveyoung.co.kr', 'musinsa.com', 'kurly.com', 'naver.com', 'ohou.se',
   // TV홈쇼핑
   'shinsegaetvshopping.com', 'gsshop.com', 'hmall.com', 'cjonstyle.com', 'nsmall.com',
   // 자사몰 구축 플랫폼(이 도메인의 하위 도메인/직접 도메인 모두 허용)
@@ -51,7 +51,7 @@ router.get('/purposes', (req, res) => {
 router.post(
   '/jobs',
   asyncHandler(async (req, res) => {
-    const { url, category } = req.body || {};
+    const { url, category = 'auto' } = req.body || {};
     if (!url || typeof url !== 'string') {
       return res.status(400).json({ error: 'URL을 입력해주세요.' });
     }

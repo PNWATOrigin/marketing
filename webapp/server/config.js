@@ -16,7 +16,7 @@ export const config = {
   ffmpegPath: process.env.FFMPEG_PATH || 'ffmpeg',
   ffprobePath: process.env.FFPROBE_PATH || 'ffprobe',
 
-  maxRenderConcurrency: int('MAX_RENDER_CONCURRENCY', 2),
+  maxRenderConcurrency: int('MAX_RENDER_CONCURRENCY', 1),
   maxAnalyzeConcurrency: int('MAX_ANALYZE_CONCURRENCY', 4),
   maxActiveJobsPerClient: int('MAX_ACTIVE_JOBS_PER_CLIENT', 1),
 

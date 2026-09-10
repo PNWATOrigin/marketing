@@ -1,3 +1,4 @@
+import { fetchOhouPage } from './ohouFetch.js';
 import { config } from '../config.js';
 import { safeFetch, SafeHttpError } from './safeHttp.js';
 import { UnsafeUrlError } from './ssrf.js';
@@ -41,6 +42,11 @@ function decodeBody(body, contentType) {
 }
 
 export async function fetchProductPage(url, { timeoutMs = config.analyzeTimeoutMs, maxBytes = config.maxHtmlBytes } = {}) {
+  const target = new URL(url);
+  if (target.hostname === 'store.ohou.se') {
+    try { return await fetchOhouPage(url, { timeoutMs, maxBytes }); }
+    catch { throw new PageFetchError('오늘의집 상품 페이지를 읽지 못했어요. 잠시 후 다시 시도해주세요.', 'FETCH_FAILED'); }
+  }
   let res;
   try {
     res = await withTimeout(

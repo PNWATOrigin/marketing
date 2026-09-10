@@ -1,11 +1,12 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { config } from '../../config.js';
 import { resolveFonts } from './fonts.js';
-import { ensureGradientBackground } from './gradient.js';
 import { buildRenderPlan, RENDER_CONSTANTS } from './filterGraph.js';
 import { runFfmpeg, runFfprobe, FfmpegError } from './ffmpegRunner.js';
 
 function pickSceneImages(scenes, imagePaths, gradientPath) {
-  if (!imagePaths.length) return scenes.map(() => gradientPath);
+  if (!imagePaths.length) throw new FfmpegError('상품 이미지를 가져오지 못했어요. 다른 상품 URL로 다시 시도해주세요.');
   return scenes.map((_, i) => imagePaths[i % imagePaths.length]);
 }
 
@@ -45,10 +46,17 @@ async function verifyOutput(outputPath, expectedDuration) {
  */
 export async function renderVideo({ scenes, imagePaths, outputPath, onProgress }) {
   const fonts = resolveFonts();
-  const gradientPath = await ensureGradientBackground();
+  const gradientPath = null;
   const sceneImagePaths = pickSceneImages(scenes, imagePaths, gradientPath);
 
-  const plan = buildRenderPlan({ scenes, sceneImagePaths, fonts });
+  const textDir = await fs.mkdtemp(path.join(path.dirname(outputPath), 'captions-'));
+  const prepared = await Promise.all(scenes.map(async (scene, i) => {
+    const textFiles = { headline: path.join(textDir, `${i}-head.txt`), sub: path.join(textDir, `${i}-sub.txt`) };
+    await fs.writeFile(textFiles.headline, String(scene.headline || ''), 'utf8');
+    await fs.writeFile(textFiles.sub, String(scene.sub || ''), 'utf8');
+    return { ...scene, textFiles };
+  }));
+  const plan = buildRenderPlan({ scenes: prepared, sceneImagePaths, fonts });
 
   const args = [
     '-y',
@@ -56,6 +64,8 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress }
     '-loglevel',
     'error',
     ...plan.inputArgs,
+    '-i', path.join(config.rootDir, 'assets', 'pink-pop.mp3'),
+    '-filter_complex_threads', '1',
     '-filter_complex',
     plan.filterComplex,
     '-map',
@@ -64,9 +74,11 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress }
     String(plan.fps),
     '-t',
     plan.totalDuration.toFixed(2),
-    '-an',
+    '-map', `${sceneImagePaths.length}:a`,
+    '-c:a', 'aac', '-b:a', '96k',
     '-c:v',
     'libx264',
+    '-threads', '2',
     '-preset',
     'ultrafast', // 3분 이내 완료 목표: 압축률보다 인코딩 속도 우선 (짧은 SNS 영상이라 화질 차이는 미미함)
     '-crf',
@@ -79,7 +91,11 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress }
   ];
 
   // onProgress(fraction)로 0~1 사이 실제 ffmpeg 진행률을 그대로 전달한다.
-  await runFfmpeg(args, { timeoutMs: config.renderTimeoutMs, totalSeconds: plan.totalDuration, onProgress });
+  try {
+    await runFfmpeg(args, { timeoutMs: config.renderTimeoutMs, totalSeconds: plan.totalDuration, onProgress });
+  } finally {
+    await fs.rm(textDir, { recursive: true, force: true });
+  }
   const info = await verifyOutput(outputPath, plan.totalDuration);
   return { outputPath, ...info, totalDuration: plan.totalDuration };
 }
