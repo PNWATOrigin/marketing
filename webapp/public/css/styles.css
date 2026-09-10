@@ -27,7 +27,7 @@ body {
 body {
   font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
   color: var(--text);
-  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 55%);
+  background: linear-gradient(180deg, rgba(183, 240, 247, 0.55), rgba(252, 231, 243, 0.7)), url('/img/bg.jpg') center top / cover no-repeat;
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
