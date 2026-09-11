@@ -776,3 +776,14 @@ body {
 .art-remake img { left:-223.08%; }
 .result-art:focus-visible { outline:3px solid #a855f7; outline-offset:3px; }
 .result-art:disabled { opacity:.5; cursor:wait; }
+
+.source-art-dialog { width:min(850px,96vw); max-width:96vw; max-height:94vh; padding:0; border:0; border-radius:28px; background:transparent; overflow:hidden; }
+.source-popup-art { display:block; width:100%; height:auto; }
+.source-hit { position:absolute; display:block; padding:0; border:0; background:transparent; cursor:pointer; border-radius:999px; }
+.source-hit-zip { left:7.4%; top:40.5%; width:42.3%; height:24%; }
+.source-hit-xml { left:50.8%; top:40.5%; width:42%; height:24%; }
+.source-hit-close { left:88.7%; top:7.8%; width:7.5%; height:13%; border-radius:25%; }
+.source-hit:hover { background:#ffffff18; }
+.source-hit:focus-visible { outline:3px solid #9333ea; outline-offset:-4px; }
+.source-sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+@media (orientation:landscape) { .source-art-dialog { width:min(850px,96vw,165vh); } }
