@@ -74,6 +74,29 @@ const HEALTH_VIEWS_SCRIPTS=[
  {line1:'건강식품 하나 고르는데 이렇게까지 비교한다고?',line2:'저도 처음엔 그렇게 생각했어요.',line3:'그런데 매일 챙기는 거라면 꼼꼼하게 보는 게 맞더라고요.'},
  {line1:'이건 저만 몰랐던 건가요?',line2:'주변 사람들은 이미 알고 챙기고 있더라고요.',line3:'저도 알아보기 시작했는데, 생각보다 재미있는 차이가 있었습니다.'},
 ];
+// 디지털/가전 조회수 확보형 전용 나레이션 20종 - 자리표시자 없음, 4줄 구성.
+const DIGITAL_VIEWS_SCRIPTS=[
+ {line1:'아직도 이걸 직접 하고 계세요?',line2:'매일 반복하는 작은 불편함인데요.',line3:'가전 하나 바꿨을 뿐인데',line4:'생각보다 일상이 꽤 달라지더라고요.'},
+ {line1:'요즘 가전은 그냥 켜고 끄는 게 아니더라고요.',line2:'제가 몰랐던 기능이 이렇게 많았나 싶었어요.',line3:'알고 쓰는 사람과 모르고 쓰는 사람,',line4:'차이가 꽤 큽니다.'},
+ {line1:'가전 살 때 디자인만 보고 고르시나요?',line2:'저도 예전에는 그랬거든요.',line3:'그런데 막상 매일 써보니까',line4:'진짜 중요한 건 따로 있더라고요.'},
+ {line1:'이 기능, 왜 이제 알았을까요?',line2:'처음에는 별거 아니라고 생각했는데',line3:'한번 써보니까',line4:'없던 때로 돌아가기 어렵더라고요.'},
+ {line1:'비슷하게 생긴 가전인데',line2:'사용해보면 차이가 꽤 납니다.',line3:'겉모습만 보고 고르면 놓치기 쉬운 것들,',line4:'직접 비교해보면 바로 보여요.'},
+ {line1:'가전을 바꾸는 게 뭐가 그렇게 다를까 했거든요.',line2:'그런데 하루에 몇 번씩 쓰는 제품이라 그런지',line3:'작은 차이가 쌓이니까',line4:'생각보다 체감이 크더라고요.'},
+ {line1:'비싼 가전이 무조건 좋은 줄 알았어요.',line2:'그런데 직접 알아보니까',line3:'가격보다 먼저 봐야 하는 게 있더라고요.',line4:'저도 이건 처음 알았습니다.'},
+ {line1:'이런 기능까지 있다고요?',line2:'저는 그냥 기본 기능만 쓰고 있었거든요.',line3:'알고 보니까',line4:'가전을 제대로 활용하는 방법이 따로 있더라고요.'},
+ {line1:'매일 쓰면서도 그냥 참고 있었던 불편함,',line2:'생각보다 많지 않으세요?',line3:'저도 별거 아니라고 넘겼는데',line4:'가전 하나 바꾸고 생각이 달라졌어요.'},
+ {line1:'가전 살 때 스펙부터 보시죠?',line2:'그런데 실제로 매일 써보면',line3:'숫자보다 더 중요한 부분이 있더라고요.',line4:'저라면 이제 이것부터 봅니다.'},
+ {line1:'요즘 사람들이 가전을 고를 때',line2:'이걸 꼭 확인한다고 하더라고요.',line3:'처음에는 왜 그런가 했는데',line4:'알아보니까 이유가 있었습니다.'},
+ {line1:'가전은 한번 사면 오래 쓰잖아요.',line2:'그래서 처음 선택할 때',line3:'생각보다 꼼꼼하게 봐야 하더라고요.',line4:'저도 이번에 제대로 비교해봤습니다.'},
+ {line1:'똑같아 보이는데 왜 이렇게 다를까요?',line2:'저도 처음에는 이해가 안 됐어요.',line3:'그런데 하나씩 비교해보니까',line4:'차이가 생기는 이유가 있더라고요.'},
+ {line1:'하루에 몇 번씩 사용하는 가전이라면',line2:'이건 꼭 확인해보세요.',line3:'처음에는 작은 기능처럼 보이는데',line4:'매일 쓰면 이야기가 달라집니다.'},
+ {line1:'가전 사고 나서',line2:'"이 기능 있는 걸 살 걸" 한 적 있으시죠?',line3:'저도 몇 번 그랬거든요.',line4:'그래서 이제는 구매 전에 이것부터 확인합니다.'},
+ {line1:'요즘 스마트 가전이 왜 이렇게 많아졌을까요?',line2:'그냥 유행이라 생각했는데',line3:'직접 써보니까 알겠더라고요.',line4:'생활이 조금씩 편해지는 이유가 있었습니다.'},
+ {line1:'가전은 다 거기서 거기라고 생각하시나요?',line2:'저도 그렇게 생각했는데요.',line3:'매일 사용하는 제품일수록',line4:'작은 차이가 꽤 크게 느껴집니다.'},
+ {line1:'이거 하나 바꿨을 뿐인데',line2:'집에서 하는 일이 조금씩 줄어들더라고요.',line3:'처음엔 별 기대 없었는데',line4:'생각보다 편리함의 차이가 컸습니다.'},
+ {line1:'가전 살 때 가장 많이 하는 실수가 뭘까요?',line2:'저도 똑같은 실수를 했는데요.',line3:'눈에 보이는 것만 비교하다가',line4:'정작 중요한 걸 놓치고 있었습니다.'},
+ {line1:'아직도 가전을 이렇게 사용하고 계신다면',line2:'한번 확인해보세요.',line3:'당연하다고 생각했던 사용 방식이',line4:'사실은 더 편하게 바뀔 수도 있습니다.'},
+];
 // 이름 기준으로 목록 중 하나를 고정 선택한다(같은 상품이면 항상 같은 톤, 상품마다는 다양하게).
 function pickByHash(name,list){
  let h=0; for(const ch of String(name)) h=(h*31+ch.charCodeAt(0))>>>0;
@@ -107,6 +130,12 @@ export function generateScript(product,purposeId,category='auto') {
   return {purpose:purposeId,totalDuration:15,scenes:healthLines.map(([headline,sub],i)=>({key:['hook','problem','benefit','brand','cta'][i],start:i*3,end:(i+1)*3,duration:3,headline,sub}))};
  }
  const vacuum=/청소기/.test(product.name||'')&&/자동\s*먼지\s*비움/.test([product.name,...features].join(' '));
+ if(!vacuum&&category==='digital'&&purposeId==='views'){
+  const t=pickByHash(product.name||name,DIGITAL_VIEWS_SCRIPTS);
+  const fill=(s)=>short(s,48);
+  const digitalLines=[[fill(t.line1),null],[fill(t.line2),null],[fill(t.line3),null],[fill(t.line4),null],['이거 좋아할 친구에게','지금 공유해 주세요']];
+  return {purpose:purposeId,totalDuration:15,scenes:digitalLines.map(([headline,sub],i)=>({key:['hook','problem','benefit','brand','cta'][i],start:i*3,end:(i+1)*3,duration:3,headline,sub}))};
+ }
  const lines=vacuum?{
  views:[['청소 끝났는데…','먼지통 비우기가 남았네?'],['청소보다 이게','더 귀찮았던 사람?'],['이제 먼지 비움까지','자동으로!'],[brand,'자동먼지비움 청소기'],['그 친구 생각났죠?','지금 공유해 주세요']],
  sales:[['먼지통 비우기','아직도 직접 하세요?'],['귀찮은 마무리,','자동으로 바꾸세요'],[feature,next],[brand,'자동먼지비움 무선청소기'],['상품 구성과 혜택','지금 확인하세요']],
