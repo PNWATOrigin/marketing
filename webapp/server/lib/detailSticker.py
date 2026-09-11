@@ -2,7 +2,7 @@ import sys, json, os
 os.environ.setdefault('OMP_NUM_THREADS','1')
 from PIL import Image, ImageFilter, ImageStat
 from rembg import remove, new_session
-im=Image.open(sys.argv[1]).convert('RGB'); im.thumbnail((800,1600))
+im=Image.open(sys.argv[1]).convert('RGB'); im.thumbnail((512,960))
 w,h=im.size
 # Locate a continuous photographic band; sparse type on a plain background has few rich tiles.
 step=40; bands=[]

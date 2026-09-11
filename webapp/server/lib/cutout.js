@@ -33,15 +33,15 @@ export async function cutoutOnBackground(inputPath, outputPath, backgroundPath, 
   });
 }
 
-// Only a few sequential candidates: keep memory bounded on the free server.
+// One best candidate with a hard deadline; retain original photos on failure.
 export async function addDetailStickers(assets, workDir) {
   const path = await import('node:path');
   let accepted=0;
-  for (const asset of assets.filter(a=>!a.animated && !['TEXT_IMAGE','LOGO','UNUSABLE'].includes(a.type)).slice(0,3)) {
+  for (const asset of assets.filter(a=>!a.animated && !['TEXT_IMAGE','LOGO','UNUSABLE'].includes(a.type)).sort((a,b)=>(b.quality||0)-(a.quality||0)).slice(0,1)) {
     const stickerPath=path.join(workDir,`sticker-${accepted}.png`);
     const composition=path.join(workDir,`sticker-scene-${accepted}.jpg`);
     try {
-      await exec(process.env.PYTHON_PATH||'python3',[fileURLToPath(new URL('./detailSticker.py',import.meta.url)),asset.path,stickerPath,composition],{timeout:45000,windowsHide:true,env:{...process.env,OMP_NUM_THREADS:'1'}});
+      await exec(process.env.PYTHON_PATH||'python3',[fileURLToPath(new URL('./detailSticker.py',import.meta.url)),asset.path,stickerPath,composition],{timeout:15000,killSignal:'SIGKILL',windowsHide:true,env:{...process.env,OMP_NUM_THREADS:'1',OPENBLAS_NUM_THREADS:'1',MKL_NUM_THREADS:'1'}});
       // Preserve source OCR tags so the sticker is selected for the same subject.
       Object.assign(asset,{path:composition,stickerPath,originalPath:asset.path,width:1080,height:1920,composition:1080/1920,provenance:asset.provenance+'+photo-region+cutout'});
       accepted++;
