@@ -50,7 +50,7 @@ async function enrichWithImageText(product, workDir) {
     if (!targets.length) return;
     // OCR은 사진이 아니라 글자 위주의 안내 이미지(홍보 문구 배너 등)를 오히려 읽고
     // 싶은 경우가 많아, 영상 장면용으로 쓰는 "사진다움" 필터는 건너뛴다.
-    const imagePaths = (await downloadImages(targets, workDir, { max: product.detailOnly?6:4, skipPhotoFilter: true })).slice(0, product.detailOnly?18:6);
+    const imagePaths = (await downloadImages(targets, workDir, { max: product.detailOnly?6:4, skipPhotoFilter: true })).slice(0, product.detailOnly?8:6);
     // tesseract를 동시에 여러 개 띄우면 리소스가 제한된 환경(무료 호스팅 등)에서
     // 전부 조용히 실패하는 경우가 있어(개별 오류 없이 빈 결과), 순차적으로 실행한다.
     const texts = [];
@@ -75,7 +75,7 @@ async function runAnalyze(jobId) {
   if (!job) return;
   updateJob(jobId, { status: 'analyzing', stage: 'analyzing', error: null });
   try {
-    const product = await cached('products-detail-v3',job.url,async()=>{
+    const product = await cached('products-detail-v4',job.url,async()=>{
       const {html,finalUrl}=await fetchProductPage(job.url);
       const product=analyzeHtml(html,finalUrl);
       await enrichWithImageText(product,path.join(config.workDir,jobId,'ocr'));

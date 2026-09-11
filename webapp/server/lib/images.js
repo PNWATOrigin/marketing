@@ -89,7 +89,7 @@ async function sliceTallImage(filePath, destDir, index, w, h) {
     try {
       await exec(
         config.ffmpegPath,
-        ['-y', '-i', filePath, '-vf', `crop=${w}:${sliceHeight}:0:${y}`, '-frames:v', '1', outPath],
+        ['-y', '-threads','1', '-i', filePath, '-threads','1', '-vf', `crop=${w}:${sliceHeight}:0:${y}`, '-frames:v', '1', outPath],
         { timeout: 6000 }
       );
       outputs.push(outPath);

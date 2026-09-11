@@ -1,4 +1,6 @@
 import { execFile } from 'node:child_process';
+import fs from 'node:fs/promises';
+import { promisify } from 'node:util';
 import { config } from '../config.js';
 
 // OCR을 provider로 분리해서 나중에 외부 Vision OCR을 붙이더라도 호출 쪽
@@ -7,15 +9,22 @@ import { config } from '../config.js';
 // (최선 노력, 상품 분석 전체를 막지 않고 비용도 발생시키지 않는다).
 
 // 무료 로컬 OCR(Tesseract). 실패/타임아웃이면 빈 문자열을 반환한다.
-function localOcr(imagePath, timeoutMs) {
-  return new Promise((resolve) => {
+async function localOcr(imagePath, timeoutMs) {
+  const scaled=imagePath+'.ocr.png';
+  try {
+    await promisify(execFile)(config.ffmpegPath,['-y','-threads','1','-i',imagePath,'-vf','scale=800:-1','-threads','1','-frames:v','1',scaled],{timeout:12000});
+    imagePath=scaled;
+  } catch {}
+  try {
+  return await new Promise((resolve) => {
     execFile(
       'tesseract',
       [imagePath, 'stdout', '-l', 'kor+eng', '--psm', '6'],
-      { timeout: timeoutMs, maxBuffer: 1024 * 1024 },
+      { timeout: Math.max(timeoutMs,15000), env:{...process.env,OMP_THREAD_LIMIT:'1'}, maxBuffer: 1024 * 1024 },
       (err, stdout) => resolve(err ? '' : stdout)
     );
   });
+  } finally { await fs.rm(scaled,{force:true}).catch(()=>{}); }
 }
 
 // 외부 Vision OCR을 붙이고 싶다면 여기에 실제 API 호출을 구현하면 된다. 지금은
