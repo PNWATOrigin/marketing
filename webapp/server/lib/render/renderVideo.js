@@ -5,6 +5,26 @@ import { resolveFonts } from './fonts.js';
 import { buildRenderPlan, buildNarrationPlan, RENDER_CONSTANTS } from './filterGraph.js';
 import { runFfmpeg, runFfprobe, FfmpegError } from './ffmpegRunner.js';
 
+// 글자 수로만 잘라 줄바꿈하면 단어 중간이 끊겨 읽기 불편하므로, 띄어쓰기(어절) 단위로
+// 줄바꿈한다. 내용이 잘리지 않도록 줄 수는 제한하지 않는다(자막 영역이 좁아 보통
+// 1~2줄에서 끝난다 - script.js가 애초에 문구 길이를 짧게 만들어둔다).
+function wrapCaption(text, maxCharsPerLine = 20) {
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word;
+    if (line && [...next].length > maxCharsPerLine) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = next;
+    }
+  }
+  if (line) lines.push(line);
+  return lines.join('\n');
+}
+
 function pickSceneImages(scenes, imagePaths, gradientPath) {
   if (!imagePaths.length) throw new FfmpegError('상품 이미지를 가져오지 못했어요. 다른 상품 URL로 다시 시도해주세요.');
   return scenes.map((_, i) => imagePaths[i % imagePaths.length]);
@@ -58,9 +78,12 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
 
   const textDir = await fs.mkdtemp(path.join(path.dirname(outputPath), 'captions-'));
   const prepared = await Promise.all(scenes.map(async (scene, i) => {
+    const headline = wrapCaption(scene.headline);
+    const sub = wrapCaption(scene.sub);
     const textFiles = { headline: path.join(textDir, `${i}-head.txt`), sub: path.join(textDir, `${i}-sub.txt`) };
-    await fs.writeFile(textFiles.headline, String(scene.headline || ''), 'utf8');
-    await fs.writeFile(textFiles.sub, String(scene.sub || ''), 'utf8');
+    await fs.writeFile(textFiles.headline, headline, 'utf8');
+    await fs.writeFile(textFiles.sub, sub, 'utf8');
+    scene = { ...scene, headline, sub };
     const captionFiles=[];
     if(narration) {
       let group=[];

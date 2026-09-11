@@ -48,21 +48,6 @@ router.get('/purposes', (req, res) => {
   res.json({ purposes: Object.values(PURPOSES) });
 });
 
-// 완성된 영상의 나레이션(자동 생성된 mp3)만 배경음악 없이 따로 받을 수 있게 한다.
-router.get('/jobs/:id/narration',asyncHandler(async(req,res)=>{
-  const job=getJob(req.params.id);
-  if(!job||job.clientId!==getClientId(req))return res.status(403).json({error:'이 작업에 접근할 수 없어요.'});
-  if(!job.narration?.path||!fssync.existsSync(job.narration.path))return res.status(404).json({error:'나레이션 음성이 없어요.'});
-  res.download(job.narration.path,'narration'+path.extname(job.narration.path));
-}));
-
-router.get('/jobs/:id/storyboard',asyncHandler(async(req,res)=>{
-  const job=getJob(req.params.id);
-  if(!job||job.clientId!==getClientId(req))return res.status(403).json({error:'이 작업에 접근할 수 없어요.'});
-  if(!job.storyboard)return res.status(404).json({error:'아직 편집 계획이 없어요.'});
-  res.json({...job.storyboard,shots:job.storyboard.shots.map(({imagePath,...shot})=>shot)});
-}));
-
 router.post(
   '/jobs',
   asyncHandler(async (req, res) => {

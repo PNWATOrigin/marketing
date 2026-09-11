@@ -12,8 +12,6 @@ import { UnsafeUrlError } from './ssrf.js';
 import { ocrImage, extractCleanLines } from './ocr.js';
 import { cutoutOnBackground } from './cutout.js';
 import { ensureGradientBackground } from './render/gradient.js';
-import { synthesizeNarration } from './narration.js';
-import { describeAssets, makeStoryboard } from './storyboard.js';
 import { cached } from './cache.js';
 
 const analyzeQueue = new ConcurrencyQueue(config.maxAnalyzeConcurrency);
@@ -188,23 +186,18 @@ async function runRender(jobId) {
     const watchdog = startProgressWatchdog(jobId);
     try {
       const script = generateScript(job.product, job.purpose, job.category);
-      const narration = await synthesizeNarration(job, script);
-      updateJob(jobId,{narration,stage:'matching'});
+      const scenes = script.scenes.map((s) => ({ headline: s.headline, sub: s.sub || null }));
+      updateJob(jobId, { status: 'rendering', stage: 'rendering', progress: 0, scenes });
       // 이미지 다운로드(0~10%)와 ffmpeg 인코딩(10~100%)을 하나의 진행률로 이어붙인다.
       const imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
         onEach: (done, total) => watchdog.report(total ? Math.round((done / total) * 10) : 0),
       });
       await applyCutouts(imagePaths, path.join(workDir, 'images'), job);
-      const assets=await describeAssets(imagePaths,job.product);
-      const storyboard=makeStoryboard({narration,assets,category:job.category,purpose:job.purpose,product:job.product});
-      updateJob(jobId,{status:'rendering',stage:'rendering',storyboard,scenes:storyboard.shots.map(s=>({headline:s.headline,start:s.start,end:s.end})),warnings:storyboard.warnings});
 
       await fs.mkdir(config.outputDir, { recursive: true });
       const outputPath = path.join(config.outputDir, `${jobId}.mp4`);
       await renderVideo({
-        scenes: storyboard.shots,
-        narration,
-        style:storyboard.style,
+        scenes: script.scenes,
         imagePaths,
         outputPath,
         purpose: job.purpose,

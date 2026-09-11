@@ -106,7 +106,7 @@
     queued: '대기열에서 기다리는 중...',
     analyzing: '상품 정보를 분석하는 중...',
     awaiting_purpose: '분석이 끝났어요',
-    scripting: '나레이션 타이밍과 장면을 맞추는 중...',
+    scripting: '대본을 쓰는 중...',
     completed: '완성됐어요!',
     failed: '문제가 발생했어요',
   };
@@ -382,18 +382,6 @@
       alert(err.message);
       startRenderBtn.disabled = false;
     }
-  });
-
-  document.getElementById('download-narration-btn').addEventListener('click',async()=>{
-    try{
-      const response=await fetch(`/api/jobs/${currentJobId}/narration`,{headers:{'X-Client-Id':clientId}});
-      if(!response.ok)throw new Error('보관된 원본 음성을 찾을 수 없어요.');
-      const url=URL.createObjectURL(await response.blob());
-      const link=document.createElement('a');link.href=url;
-      const disposition=response.headers.get('content-disposition')||'';
-      link.download=disposition.match(/filename="([^"]+)"/)?.[1]||'narration-original.mp3';
-      link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
-    }catch(err){alert(err.message);}
   });
 
   retryBtn.addEventListener('click', async () => {
