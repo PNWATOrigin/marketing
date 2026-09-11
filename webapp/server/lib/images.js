@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { config } from '../config.js';
@@ -77,6 +78,10 @@ async function isPhotographic(filePath) {
 // 세로로 아주 긴 "상세페이지" 이미지를 균등한 여러 조각으로 잘라 각각을 독립된 이미지
 // 파일로 저장한다. 조각 하나 실패해도 나머지 조각으로 계속 진행한다.
 async function sliceTallImage(filePath, destDir, index, w, h) {
+  try {
+    const {stdout}=await exec(process.env.PYTHON_PATH||'python3',[fileURLToPath(new URL('./sliceDetail.py',import.meta.url)),filePath,destDir,String(index)],{timeout:20000,windowsHide:true,maxBuffer:1024*1024});
+    const cuts=JSON.parse(stdout);if(cuts.length)return cuts;
+  } catch { /* Retain the existing decoder fallback. */ }
   const idealSliceHeight = Math.round(w * 1.6); // 세로로 긴 장면(9:16)에 가까운 비율
   const numSlices = Math.min(12, Math.max(2, Math.ceil(h / idealSliceHeight)));
   const sliceHeight = Math.min(h,idealSliceHeight);

@@ -35,7 +35,9 @@ function affinity(text, asset) {
   return matches / Math.max(1,terms.length);
 }
 function choose(text, assets, used, previous, profile, closing=false) {
-  return assets.map(a => {
+  const fresh=assets.filter(a=>!used.has(a.id));
+  const candidates=fresh.length?fresh:assets.filter(a=>a.id!==previous);
+  return (candidates.length?candidates:assets).map(a => {
     const semantic = affinity(text,a);
     const novelty = a.id===previous ? 0 : 1/(1+(used.get(a.id)||0));
     const score = semantic*0.45+a.quality*0.20+a.visibility*0.15+a.composition*0.10+novelty*0.10;
