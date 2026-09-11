@@ -101,6 +101,7 @@ export function toPublicJob(job) {
           brand: job.product.brand,
           price: job.product.price,
           originalPrice: job.product.originalPrice,
+          priceSource: job.product.priceSource || null,
           currency: job.product.currency,
           description: job.product.description,
           images: job.product.images.slice(0, 3),

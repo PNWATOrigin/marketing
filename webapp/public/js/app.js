@@ -86,6 +86,7 @@
   });
   const inputError = document.getElementById('input-error');
   const productSummary = document.getElementById('product-summary');
+  const productWarnings = document.getElementById('product-warnings');
   const purposeGrid = document.getElementById('purpose-grid');
   const startRenderBtn = document.getElementById('start-render-btn');
   const refreshStart=()=>{startRenderBtn.disabled=!selectedPurpose;};
@@ -156,6 +157,8 @@
   function renderProductSummary(product) {
     if (!product) {
       productSummary.innerHTML = '';
+      productWarnings.hidden = true;
+      productWarnings.innerHTML = '';
       return;
     }
     const img = product.images?.[0];
@@ -166,6 +169,10 @@
         ${product.brand ? `<div class="ps-meta">${escapeHtml(product.brand)}</div>` : ''}
       </div>
     `;
+    // 가격 출처 충돌처럼 사용자가 직접 확인해야 하는 항목을 그대로 숨기지 않고 보여준다.
+    const warnings = product.warnings || [];
+    productWarnings.hidden = !warnings.length;
+    productWarnings.innerHTML = warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join('');
   }
 
   function escapeHtml(str) {
