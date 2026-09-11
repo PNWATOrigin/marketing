@@ -9,8 +9,8 @@ import { boingTrack, exportSources } from './editSources.js';
 // 글자 수로만 잘라 줄바꿈하면 단어 중간이 끊겨 읽기 불편하므로, 띄어쓰기(어절) 단위로
 // 줄바꿈한다. 내용이 잘리지 않도록 줄 수는 제한하지 않는다(자막 영역이 좁아 보통
 // 1~2줄에서 끝난다 - script.js가 애초에 문구 길이를 짧게 만들어둔다).
-function wrapCaption(text, maxCharsPerLine = 20) {
-  const words = String(text || '').split(/\s+/).filter(Boolean);
+function wrapCaption(text, maxCharsPerLine = 10) {
+  const words = String(text || '').split(/\s+/).filter(Boolean).flatMap(w=>{const a=[...w],parts=[];while(a.length)parts.push(a.splice(0,maxCharsPerLine).join(''));return parts;});
   const lines = [];
   let line = '';
   for (const word of words) {
@@ -91,10 +91,14 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
       const flush=async()=>{
         if(!group.length)return;
         const text=group.map(c=>c.text).join(' ');
-        const lines=wrapCaption(text,18).split('\n');
-        const file=path.join(textDir,`${i}-cue-${captionFiles.length}.txt`);
-        await fs.writeFile(file,lines.join('\n'),'utf8');
-        captionFiles.push({path:file,text:lines.join('\n'),start:Math.max(0,group[0].start-scene.start),end:Math.min(scene.duration,group.at(-1).end-scene.start)});
+        const lines=wrapCaption(text,10).split('\n');
+        const start=Math.max(0,group[0].start-scene.start),end=Math.min(scene.duration,group.at(-1).end-scene.start);
+        for(let n=0;n<lines.length;n+=2){
+          const chunk=lines.slice(n,n+2).join('\n'),count=Math.ceil(lines.length/2),part=n/2;
+          const file=path.join(textDir,`${i}-cue-${captionFiles.length}.txt`);
+          await fs.writeFile(file,chunk,'utf8');
+          captionFiles.push({path:file,text:chunk,start:start+(end-start)*part/count,end:start+(end-start)*(part+1)/count});
+        }
         group=[];
       };
       for(const c of scene.cues){if(group.length&&(group.map(w=>w.text).join(' ').length+c.text.length>32||c.start-group[0].start>1.3))await flush();group.push(c);}

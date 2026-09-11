@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const FONTS_DIR = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../../assets/fonts');
 
 const BOLD_CANDIDATES = [
+  path.join(FONTS_DIR, 'Jua-Regular.ttf'),
   process.env.FONT_BOLD_PATH,
   path.join(FONTS_DIR, 'Paperlogy-Bold.ttf'),
   '/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc',

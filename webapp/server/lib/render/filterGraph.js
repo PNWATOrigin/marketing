@@ -46,7 +46,7 @@ export function buildNarrationPlan({scenes,fonts,style}) {
    const frames=Math.round(s.end*FPS)-Math.round(s.start*FPS);
    const base=`[${i}:v]${s.animated?`trim=duration=${s.duration},setpts=PTS-STARTPTS,fps=${FPS},`:'trim=end_frame=1,'}scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1`;
    const movement=s.animated?`,tpad=stop_mode=clone:stop_duration=${s.duration},trim=end_frame=${frames}`:`,loop=loop=${frames-1}:size=1:start=0,fps=${FPS},trim=end_frame=${frames}`;
-   const captions=(s.captionFiles||[]).map(c=>`drawtext=fontfile='${escapePath(fonts.bold)}':textfile='${escapePath(c.path)}':expansion=none:fontsize=48:fontcolor=${style.captionBox?'0x151515':'white'}:borderw=${style.captionBox?0:3}:bordercolor=black:box=${style.captionBox?1:0}:boxcolor=white@0.94:boxborderw=16:line_spacing=12:x=(w-text_w)/2:y=${style.captionY}:enable='gte(t,${c.start})*lt(t,${c.end})'`);
+   const captions=(s.captionFiles||[]).map(c=>`drawtext=fontfile='${escapePath(fonts.bold)}':textfile='${escapePath(c.path)}':expansion=none:fontsize=76:fontcolor=0x111111:borderw=0:box=1:boxcolor=white@1:boxborderw=22:line_spacing=16:x=(w-text_w)/2:y=${style.captionY}:enable='gte(t,${c.start})*lt(t,${c.end})'`);
    return base+movement+(captions.length?','+captions.join(','):'')+`,format=yuv420p,setpts=PTS-STARTPTS[v${i}]`;
  });
  return {inputArgs,filterComplex:filters.join(';')+';'+scenes.map((_,i)=>`[v${i}]`).join('')+`concat=n=${scenes.length}:v=1:a=0[vout]`,outputLabel:'[vout]',totalDuration:scenes.at(-1).end,width:WIDTH,height:HEIGHT,fps:FPS};
