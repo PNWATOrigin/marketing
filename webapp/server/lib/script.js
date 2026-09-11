@@ -97,6 +97,29 @@ const DIGITAL_VIEWS_SCRIPTS=[
  {line1:'가전 살 때 가장 많이 하는 실수가 뭘까요?',line2:'저도 똑같은 실수를 했는데요.',line3:'눈에 보이는 것만 비교하다가',line4:'정작 중요한 걸 놓치고 있었습니다.'},
  {line1:'아직도 가전을 이렇게 사용하고 계신다면',line2:'한번 확인해보세요.',line3:'당연하다고 생각했던 사용 방식이',line4:'사실은 더 편하게 바뀔 수도 있습니다.'},
 ];
+// 디지털/가전 브랜드 인지도형 전용 나레이션 20종 - [브랜드명] 자리표시자, 4줄 구성.
+const DIGITAL_BRAND_SCRIPTS=[
+ {line1:'기술이 아무리 좋아도',line2:'사용하기 어렵다면 의미가 없잖아요.',line3:'그래서 일상에서 정말 필요한 기술을 고민합니다.',line4:'더 편리한 하루를 만드는 [브랜드명]입니다.'},
+ {line1:'가전 하나 바꿨을 뿐인데',line2:'하루가 조금 더 편해질 수 있습니다.',line3:'작은 불편함을 발견하고',line4:'더 나은 일상을 만드는 [브랜드명]입니다.'},
+ {line1:'새로운 기술보다 중요한 건',line2:'그 기술이 누구를 위한 것인지 아닐까요?',line3:'사람의 생활을 먼저 생각하는 가전,',line4:'[브랜드명]이 그 기준을 만들어갑니다.'},
+ {line1:'매일 사용하는 가전일수록',line2:'더 편하고 자연스러워야 하니까.',line3:'복잡함은 줄이고',line4:'일상에 필요한 편리함을 만드는 [브랜드명]입니다.'},
+ {line1:'처음에는 작은 차이처럼 보이지만',line2:'매일 반복되면 이야기가 달라집니다.',line3:'매일의 순간을 더 편리하게 바꾸는 것,',line4:'[브랜드명]이 생각하는 가전입니다.'},
+ {line1:'가전의 기술은',line2:'결국 사람의 시간을 위해 존재한다고 생각합니다.',line3:'더 간편한 생활, 더 여유로운 하루.',line4:'그 시작에 [브랜드명]이 있습니다.'},
+ {line1:'가전을 만드는 것보다',line2:'사람의 일상을 이해하는 게 먼저니까.',line3:'사용자의 생활을 고민하고',line4:'더 나은 경험을 만드는 [브랜드명]입니다.'},
+ {line1:'미래의 가전은',line2:'더 복잡해지는 방향이 아닐지도 모릅니다.',line3:'오히려 더 쉽고 자연스러워지는 것.',line4:'그런 일상을 만드는 [브랜드명]입니다.'},
+ {line1:'좋은 가전은',line2:'스펙만으로 결정되지 않는다고 생각합니다.',line3:'매일 사용할수록 편하고 만족스러운 경험.',line4:'그것을 고민하는 [브랜드명]입니다.'},
+ {line1:'우리는 거창한 것보다',line2:'매일 마주하는 작은 불편함에 집중합니다.',line3:'하나씩 바꾸다 보면',line4:'일상도 달라지니까. [브랜드명]입니다.'},
+ {line1:'가전이 바꿀 수 있는 건',line2:'기능만이 아니라 하루의 방식이라고 생각합니다.',line3:'조금 더 편하고',line4:'조금 더 스마트한 일상을 만드는 [브랜드명]입니다.'},
+ {line1:'가전을 위한 기술이 아니라',line2:'사용자를 위한 기술을 고민합니다.',line3:'누구나 쉽고 편하게 사용할 수 있도록.',line4:'일상의 기준을 만들어가는 [브랜드명]입니다.'},
+ {line1:'당연하게 사용하던 가전도',line2:'조금 다르게 생각해볼 수 있습니다.',line3:'더 편리한 방법을 찾고',line4:'일상의 새로운 기준을 만드는 [브랜드명]입니다.'},
+ {line1:'가전은 잠깐 사용하는 물건이 아니잖아요.',line2:'그래서 처음보다',line3:'오래 사용할수록 만족할 수 있는 경험을 생각합니다.',line4:'그 기준을 담은 [브랜드명]입니다.'},
+ {line1:'어려운 기술을 보여주는 것보다',line2:'생활 속에서 자연스럽게 느껴지는 기술.',line3:'쓸수록 편하고',line4:'알수록 만족스러운 가전을 만드는 [브랜드명]입니다.'},
+ {line1:'스마트하다는 건',line2:'기능이 많다는 뜻만은 아니니까요.',line3:'필요할 때 알아서 편리하고',line4:'생활에 자연스럽게 스며드는 [브랜드명]입니다.'},
+ {line1:'가전의 기준도',line2:'시대에 따라 달라져야 하지 않을까요?',line3:'기술과 디자인, 사용성까지 생각하며',line4:'새로운 기준을 만들어가는 [브랜드명]입니다.'},
+ {line1:'아침부터 잠들기 전까지',line2:'우리는 수많은 가전을 사용합니다.',line3:'그 모든 순간이 조금 더 편해지도록.',line4:'일상을 생각하는 [브랜드명]입니다.'},
+ {line1:'기술은 어려울 필요가 없습니다.',line2:'누구나 쉽게 쓰고',line3:'자연스럽게 편리함을 느낄 수 있어야 하니까.',line4:'사람을 생각하는 [브랜드명]입니다.'},
+ {line1:'좋은 가전은',line2:'생활 속에서 존재감이 크지 않을 수도 있습니다.',line3:'그만큼 자연스럽게 우리의 일상에 녹아드는 것.',line4:'매일의 편리함을 만드는 [브랜드명]입니다.'},
+];
 // 이름 기준으로 목록 중 하나를 고정 선택한다(같은 상품이면 항상 같은 톤, 상품마다는 다양하게).
 function pickByHash(name,list){
  let h=0; for(const ch of String(name)) h=(h*31+ch.charCodeAt(0))>>>0;
@@ -134,6 +157,12 @@ export function generateScript(product,purposeId,category='auto') {
   const t=pickByHash(product.name||name,DIGITAL_VIEWS_SCRIPTS);
   const fill=(s)=>short(s,48);
   const digitalLines=[[fill(t.line1),null],[fill(t.line2),null],[fill(t.line3),null],[fill(t.line4),null],['이거 좋아할 친구에게','지금 공유해 주세요']];
+  return {purpose:purposeId,totalDuration:15,scenes:digitalLines.map(([headline,sub],i)=>({key:['hook','problem','benefit','brand','cta'][i],start:i*3,end:(i+1)*3,duration:3,headline,sub}))};
+ }
+ if(!vacuum&&category==='digital'&&purposeId==='brand'){
+  const t=pickByHash(product.name||name,DIGITAL_BRAND_SCRIPTS);
+  const fill=(s)=>short(s.replace('[브랜드명]',brand),48);
+  const digitalLines=[[fill(t.line1),null],[fill(t.line2),null],[fill(t.line3),null],[fill(t.line4),null],['기억하세요',brand]];
   return {purpose:purposeId,totalDuration:15,scenes:digitalLines.map(([headline,sub],i)=>({key:['hook','problem','benefit','brand','cta'][i],start:i*3,end:(i+1)*3,duration:3,headline,sub}))};
  }
  const lines=vacuum?{
