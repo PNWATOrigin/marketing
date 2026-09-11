@@ -77,7 +77,13 @@ export async function fetchProductPage(url, { timeoutMs = config.analyzeTimeoutM
   if (contentType && !/text\/html|application\/xhtml/i.test(contentType)) {
     throw new PageFetchError('상품 페이지(HTML)가 아닌 주소예요.', 'NOT_HTML');
   }
-  const html = decodeBody(res.body, contentType);
+  let html = decodeBody(res.body, contentType);
+  if (['nutrime.co.kr','www.nutrime.co.kr'].includes(target.hostname) && target.pathname==='/goods/view') {
+    const detailUrl=new URL('/goods/view_contents',target); detailUrl.searchParams.set('no',target.searchParams.get('no')||''); detailUrl.searchParams.set('zoom','1');
+    const detail=await safeFetch(detailUrl.toString(),{timeoutMs,maxBytes,accept:'text/html'});
+    if(detail.status>=400)throw new PageFetchError('상세설명 이미지를 불러오지 못했어요.','FETCH_FAILED');
+    html += '<section id="strict-product-detail">'+decodeBody(detail.body,detail.headers['content-type'])+'</section>';
+  }
   return { html, finalUrl: res.finalUrl };
 }
 

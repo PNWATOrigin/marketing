@@ -46,17 +46,18 @@ async function enrichWithImageText(product, workDir) {
   try {
     // 세로로 긴 "상세페이지" 이미지 한 장이 여러 조각으로 잘릴 수 있어 후보 URL을
     // 넉넉히 잡고, 실제 OCR 대상 수는 따로 제한해 전체 처리 시간을 지킨다.
-    const targets = (product.images || []).slice(0, 4);
+    const targets = (product.images || []).slice(0, product.detailOnly?6:4);
     if (!targets.length) return;
     // OCR은 사진이 아니라 글자 위주의 안내 이미지(홍보 문구 배너 등)를 오히려 읽고
     // 싶은 경우가 많아, 영상 장면용으로 쓰는 "사진다움" 필터는 건너뛴다.
-    const imagePaths = (await downloadImages(targets, workDir, { max: 4, skipPhotoFilter: true })).slice(0, 6);
+    const imagePaths = (await downloadImages(targets, workDir, { max: product.detailOnly?6:4, skipPhotoFilter: true })).slice(0, product.detailOnly?18:6);
     // tesseract를 동시에 여러 개 띄우면 리소스가 제한된 환경(무료 호스팅 등)에서
     // 전부 조용히 실패하는 경우가 있어(개별 오류 없이 빈 결과), 순차적으로 실행한다.
     const texts = [];
     for (const p of imagePaths) {
       texts.push(await ocrImage(p, config.ocrTimeoutMs));
     }
+    if(product.detailOnly)product.detailLines=texts.flatMap(t=>t.split('\n').flatMap(line=>extractCleanLines(line,1).lines)).filter((x,i,a)=>a.indexOf(x)===i).slice(0,40);
     const { lines, blockedCount } = extractCleanLines(texts.join('\n'), 4 - (product.features?.length || 0));
     if (lines.length) product.features = [...(product.features || []), ...lines].slice(0, 4);
     if (blockedCount > 0) {
@@ -74,7 +75,7 @@ async function runAnalyze(jobId) {
   if (!job) return;
   updateJob(jobId, { status: 'analyzing', stage: 'analyzing', error: null });
   try {
-    const product = await cached('products-v2',job.url,async()=>{
+    const product = await cached('products-detail-v3',job.url,async()=>{
       const {html,finalUrl}=await fetchProductPage(job.url);
       const product=analyzeHtml(html,finalUrl);
       await enrichWithImageText(product,path.join(config.workDir,jobId,'ocr'));
@@ -169,7 +170,8 @@ async function runRender(jobId) {
       const imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
         onEach: (done, total) => watchdog.report(total ? Math.round((done / total) * 10) : 0),
       });
-      await applyCutouts(imagePaths, path.join(workDir, 'images'), job);
+      updateJob(jobId,{previewPaths:imagePaths});
+      if(!job.product.detailOnly)await applyCutouts(imagePaths, path.join(workDir, 'images'), job);
       const assets=await describeAssets(imagePaths,job.product);
       const storyboard=makeStoryboard({narration:timing,assets,category:job.category,purpose:job.purpose,product:job.product});
       storyboard.audioMode='bgm-only';

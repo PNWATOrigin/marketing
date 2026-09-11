@@ -47,6 +47,13 @@ function asyncHandler(fn) {
 router.get('/purposes', (req, res) => {
   res.json({ purposes: Object.values(PURPOSES), version:'auto-images-v3', narrationRequired:false, audioMode:'bgm-only' });
 });
+router.get('/jobs/:id/preview/:index',(req,res)=>{
+ const job=getJob(req.params.id), index=Number(req.params.index);
+ if(!job||job.clientId!==req.query.clientId)return res.sendStatus(403);
+ const file=Number.isInteger(index)&&index>=0?job.previewPaths?.[index]:null;
+ if(!file||!fssync.existsSync(file))return res.sendStatus(404);
+ res.sendFile(path.resolve(file));
+});
 router.get('/jobs/:id/sources',asyncHandler(async(req,res)=>{
   const job=getJob(req.params.id);
   if(!job||job.clientId!==getClientId(req))return res.status(403).json({error:'이 작업에 접근할 수 없어요.'});

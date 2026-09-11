@@ -166,6 +166,13 @@ function pickByHash(name,list){
 // No model calls. Claims come only from extracted product fields.
 export function generateScript(product,purposeId,category='auto') {
  if(!PURPOSES[purposeId]) throw new Error('알 수 없는 목적입니다.');
+ if(product.detailOnly){
+  const lines=product.detailLines||[];
+  if(lines.length<3)throw new Error('상세 이미지에서 읽을 수 있는 문구가 부족해요. 잠시 후 다시 시도해주세요.');
+  const priority=purposeId==='sales'?/성분|함량|섭취|하루|캡슐|도움/:purposeId==='brand'?/뉴트리미|두뇌비법|포스파티딜세린/:/당신|깜빡|기억|지금|챙기/;
+  const selected=[...lines.filter(x=>priority.test(x)),...lines.filter(x=>!priority.test(x))].slice(0,10);
+  return {purpose:purposeId,totalDuration:15,scenes:Array.from({length:5},(_,i)=>({key:'detail-'+i,start:i*3,end:(i+1)*3,duration:3,headline:selected[(i*2)%selected.length],sub:selected[(i*2+1)%selected.length]}))};
+ }
  const applianceType = category==='digital' ? simplifyApplianceName(product.name) : null;
  const name=category==='health'?'영양제':short(applianceType||product.name||'이 상품');
  const brand=short(product.brand||name,20);

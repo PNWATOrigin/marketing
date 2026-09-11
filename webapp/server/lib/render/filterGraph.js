@@ -44,7 +44,7 @@ export function buildNarrationPlan({scenes,fonts,style}) {
  const inputArgs=scenes.flatMap(s=>s.animated?['-stream_loop','-1','-i',s.imagePath]:['-i',s.imagePath]);
  const filters=scenes.map((s,i)=>{
    const frames=Math.round(s.end*FPS)-Math.round(s.start*FPS);
-   const base=`[${i}:v]${s.animated?`trim=duration=${s.duration},setpts=PTS-STARTPTS,fps=${FPS},`:'trim=end_frame=1,'}scale=960:1450:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=0xF5F5F3,setsar=1`;
+   const base=`[${i}:v]${s.animated?`trim=duration=${s.duration},setpts=PTS-STARTPTS,fps=${FPS},`:'trim=end_frame=1,'}scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1`;
    const movement=s.animated?`,tpad=stop_mode=clone:stop_duration=${s.duration},trim=end_frame=${frames}`:`,loop=loop=${frames-1}:size=1:start=0,fps=${FPS},trim=end_frame=${frames}`;
    const captions=(s.captionFiles||[]).map(c=>`drawtext=fontfile='${escapePath(fonts.bold)}':textfile='${escapePath(c.path)}':expansion=none:fontsize=48:fontcolor=${style.captionBox?'0x151515':'white'}:borderw=${style.captionBox?0:3}:bordercolor=black:box=${style.captionBox?1:0}:boxcolor=white@0.94:boxborderw=16:line_spacing=12:x=(w-text_w)/2:y=${style.captionY}:enable='gte(t,${c.start})*lt(t,${c.end})'`);
    return base+movement+(captions.length?','+captions.join(','):'')+`,format=yuv420p,setpts=PTS-STARTPTS[v${i}]`;

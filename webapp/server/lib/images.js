@@ -22,7 +22,7 @@ async function analyzeImage(filePath) {
     const [w, h] = stdout.trim().split('x').map(Number);
     if (!w || !h) return { verdict: 'reject' };
     if (w < 300 || h < 300) return { verdict: 'reject' };
-    if (Math.max(w, h) / Math.min(w, h) > 4) {
+    if (h > w * 1.9 || w > h * 4) {
       if (h > w) return { verdict: 'slice', w, h };
       return { verdict: 'reject' }; // 가로로 긴 얇은 배너/구분선
     }
@@ -78,7 +78,7 @@ async function isPhotographic(filePath) {
 // 파일로 저장한다. 조각 하나 실패해도 나머지 조각으로 계속 진행한다.
 async function sliceTallImage(filePath, destDir, index, w, h) {
   const idealSliceHeight = Math.round(w * 1.6); // 세로로 긴 장면(9:16)에 가까운 비율
-  const numSlices = Math.min(4, Math.max(2, Math.round(h / idealSliceHeight)));
+  const numSlices = Math.min(12, Math.max(2, Math.ceil(h / idealSliceHeight)));
   const sliceHeight = Math.min(h,idealSliceHeight);
   const ext = '.jpg';
 

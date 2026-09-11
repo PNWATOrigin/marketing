@@ -270,7 +270,10 @@ export function analyzeHtml(html, pageUrl) {
       const src = $(el).attr('src');
       try { const u = new URL(src, pageUrl); u.searchParams.set('w','1000'); u.searchParams.set('h','1000'); return u.toString(); } catch { return null; }
     }) : [];
-  const images = dedupeImages(ohou ? [...gallery, ...fromOg.images,...fromMeta.images.filter(u=>/shop-phinf|detail|description/i.test(u))] : [...fromJsonLd.images, ...fromOg.images, ...fromMeta.images], 16);
+  let images = dedupeImages(ohou ? [...gallery, ...fromOg.images,...fromMeta.images.filter(u=>/shop-phinf|detail|description/i.test(u))] : [...fromJsonLd.images, ...fromOg.images, ...fromMeta.images], 16);
+
+  const detailOnly=['nutrime.co.kr','www.nutrime.co.kr'].includes(new URL(pageUrl).hostname);
+  if(detailOnly) images=dedupeImages($('#strict-product-detail img[src*="/data/editor/goods/"]').toArray().map(el=>toAbsoluteUrl(pageUrl,$(el).attr('src'))),16);
 
   // JSON-LD/OG/메타로 이름·가격·이미지를 하나도 못 찾았을 때만 SPA 임베디드 상태를 확인한다.
   if (!name || price == null || images.length === 0) {
@@ -279,7 +282,7 @@ export function analyzeHtml(html, pageUrl) {
       const hint = scanEmbeddedState(state);
       if (!name && hint.name) name = cleanText(hint.name, 80);
       if (price == null && hint.price) price = hint.price;
-      if (images.length === 0 && hint.image) images.push(hint.image);
+      if (!detailOnly && images.length === 0 && hint.image) images.push(hint.image);
     }
   }
 
@@ -303,6 +306,7 @@ export function analyzeHtml(html, pageUrl) {
 
   return {
     sourceUrl: pageUrl,
+    detailOnly,
     name,
     brand,
     price,

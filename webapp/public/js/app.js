@@ -245,8 +245,11 @@
 
   // 제작 중에는 상세페이지 상품 이미지만 빠르게 순환한다.
   function startPreviewCycle(job) {
-    if (previewTimer) return;
-    const images = [...new Set(job.product?.images || [])];
+    const images = job.previewCount?Array.from({length:job.previewCount},(_,i)=>`/api/jobs/${currentJobId}/preview/${i}?clientId=${encodeURIComponent(clientId)}`):[...new Set(job.product?.images || [])];
+    const key=images.join('|');
+    if(previewTimer&&previewPanel.dataset.images===key)return;
+    if(previewTimer)clearInterval(previewTimer);
+    previewPanel.dataset.images=key;
     if (!images.length) return;
     previewPanel.hidden = false;
     previewIndex = 0;
@@ -257,7 +260,7 @@
       previewIndex += 1;
     };
     render();
-    previewTimer = setInterval(render, 1500);
+    previewTimer = setInterval(render, 1000);
   }
 
   function stopPreviewCycle() {
