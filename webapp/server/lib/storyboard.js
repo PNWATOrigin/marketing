@@ -29,20 +29,23 @@ export async function describeAssets(paths, product) {
   return assets;
 }
 
+const CONCEPTS=[['memory',/기억|깜빡|인지|두뇌|뇌|집중/],['growth',/성장|키|어린이|아이|칼슘|뼈/],['immune',/면역|아연|방어/],['ingredients',/성분|함량|원료|배합/],['usage',/섭취|복용|하루|캡슐|먹는|사용법/],['cleaning',/청소|먼지|흡입|물걸레/]];
 function affinity(text, asset) {
-  const terms = tokens(text);
-  const matches = terms.filter(t=>asset.tags.some(a=>a.includes(t)||t.includes(a))).length;
-  return matches / Math.max(1,terms.length);
+  const terms=tokens(text), assetText=[asset.text,...asset.tags].join(' ');
+  const matches=terms.filter(t=>asset.tags.some(a=>a.includes(t)||t.includes(a))).length;
+  const concepts=CONCEPTS.filter(([,r])=>r.test(text));
+  const shared=concepts.filter(([,r])=>r.test(assetText)).length;
+  return Math.min(1,matches/Math.max(1,terms.length)+shared*.2);
 }
 function choose(text, assets, used, previous, profile, closing=false) {
-  const fresh=assets.filter(a=>!used.has(a.id));
-  const candidates=fresh.length?fresh:assets.filter(a=>a.id!==previous);
-  return (candidates.length?candidates:assets).map(a => {
-    const semantic = affinity(text,a);
-    const novelty = a.id===previous ? 0 : 1/(1+(used.get(a.id)||0));
-    const score = semantic*0.45+a.quality*0.20+a.visibility*0.15+a.composition*0.10+novelty*0.10;
-    return { asset:a, semantic, score:score+(closing&&a.type==='PRODUCT_HERO'?0.12:0)+(profile.preferred.includes(a.type)?0.03:0)-(a.id===previous?0.15:0) };
-  }).sort((a,b)=>b.score-a.score)[0];
+  const ranked=assets.map(a=>({asset:a,semantic:affinity(text,a)}));
+  // First restrict to relevant source regions; only then minimize repeated shots.
+  const relevant=ranked.filter(a=>a.semantic>0);
+  const pool=relevant.length?relevant:ranked;
+  const fresh=pool.filter(a=>!used.has(a.asset.id));
+  const different=pool.filter(a=>a.asset.id!==previous);
+  const candidates=fresh.length?fresh:different.length?different:pool;
+  return candidates.map(({asset:a,semantic})=>({asset:a,semantic,score:semantic*.65+a.quality*.15+a.visibility*.1+a.composition*.05+(profile.preferred.includes(a.type)?.03:0)+(closing&&a.type==='PRODUCT_HERO'?.02:0)})).sort((a,b)=>b.score-a.score)[0];
 }
 
 export function makeStoryboard({ narration, assets, category, purpose, product }) {
@@ -74,7 +77,7 @@ export function makeStoryboard({ narration, assets, category, purpose, product }
   board.qa=assessStoryboard(board);
   if (board.qa.score<80) {
     // One deterministic repair: alternate available assets and stabilize the final frame.
-    for(let i=1;i<shots.length;i++) if(shots[i].assetId===shots[i-1].assetId&&usable.length>1){const a=usable.find(a=>a.id!==shots[i-1].assetId);Object.assign(shots[i],{assetId:a.id,imagePath:a.path,stickerPath:a.stickerPath,assetType:a.type,animated:a.animated,semanticScore:affinity(shots[i].headline,a)});}
+    for(let i=1;i<shots.length;i++) if(shots[i].assetId===shots[i-1].assetId&&usable.length>1){const a=usable.filter(a=>a.id!==shots[i-1].assetId).sort((a,b)=>affinity(shots[i].headline,b)-affinity(shots[i].headline,a))[0];Object.assign(shots[i],{assetId:a.id,imagePath:a.path,stickerPath:a.stickerPath,assetType:a.type,animated:a.animated,semanticScore:affinity(shots[i].headline,a)});}
     shots.at(-1).motion='hold';board.repaired=true;board.qa=assessStoryboard(board);
   }
   if(shots.some(s=>!s.semanticScore)) board.warnings.push('일부 장면은 OCR 의미 일치가 확인되지 않아 해당 상품 사진을 사용했어요.');
