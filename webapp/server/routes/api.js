@@ -45,7 +45,7 @@ function asyncHandler(fn) {
 }
 
 router.get('/purposes', (req, res) => {
-  res.json({ purposes: Object.values(PURPOSES), version:'bgm-only-v2', narrationRequired:false, audioMode:'bgm-only' });
+  res.json({ purposes: Object.values(PURPOSES), version:'auto-images-v3', narrationRequired:false, audioMode:'bgm-only' });
 });
 
 router.get('/jobs/:id/storyboard',asyncHandler(async(req,res)=>{
@@ -120,30 +120,10 @@ router.post(
     if (job.clientId !== getClientId(req)) {
       return res.status(403).json({ error: '이 작업에 접근할 수 없어요.' });
     }
-    const { purpose, imageSelections } = req.body || {};
-    const result = startJob(req.params.id, purpose, imageSelections);
+    const { purpose } = req.body || {};
+    const result = startJob(req.params.id, purpose);
     if (!result.ok) return res.status(400).json({ error: result.error });
     res.json({ job: toPublicJob(result.job) });
-  })
-);
-
-// 목적 선택 화면에서 원본/누끼 이미지를 비교해 보여주기 위한 미리보기 파일 서빙.
-router.get(
-  '/jobs/:id/preview-image',
-  asyncHandler(async (req, res) => {
-    const job = getJob(req.params.id);
-    if (!job) return res.status(404).json({ error: '작업을 찾을 수 없어요.' });
-    if (job.clientId !== getClientId(req)) {
-      return res.status(403).json({ error: '이 작업에 접근할 수 없어요.' });
-    }
-    const index = Number(req.query.index);
-    const option = Number.isInteger(index) ? job.cutoutOptions?.[index] : null;
-    if (!option) return res.status(404).json({ error: '이미지를 찾을 수 없어요.' });
-    const filePath = req.query.type === 'cutout' ? option.cutout : option.original;
-    if (!filePath || !fssync.existsSync(filePath)) {
-      return res.status(404).json({ error: '이미지를 찾을 수 없어요.' });
-    }
-    res.sendFile(path.resolve(filePath));
   })
 );
 
