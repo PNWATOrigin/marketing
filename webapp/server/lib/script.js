@@ -167,8 +167,8 @@ function pickByHash(name,list){
 export function generateScript(product,purposeId,category='auto') {
  if(!PURPOSES[purposeId]) throw new Error('알 수 없는 목적입니다.');
  const applianceType = category==='digital' ? simplifyApplianceName(product.name) : null;
- const name=short(applianceType||product.name||'이 상품');
- const brand=short(product.brand||applianceType||product.name||'이 상품',20);
+ const name=category==='health'?'영양제':short(applianceType||product.name||'이 상품');
+ const brand=short(product.brand||name,20);
  const features=(product.features||[]).filter(Boolean);
  const feature=short(features[0]||name), next=short(features[1]||'상품 구성을 확인해 보세요');
  const point3=short(features[2]||feature);
