@@ -170,7 +170,7 @@
     productSummary.innerHTML = `
       ${img ? `<img src="${escapeHtml(img)}" alt="" onerror="this.remove()" />` : ''}
       <div>
-        <div class="ps-name">${escapeHtml(product.name || '상품명을 확인하지 못했어요')}</div>
+        <div class="ps-name">${escapeHtml(product.displayName || product.name || '상품명을 확인하지 못했어요')}</div>
         ${product.brand ? `<div class="ps-meta">${escapeHtml(product.brand)}</div>` : ''}
       </div>
     `;

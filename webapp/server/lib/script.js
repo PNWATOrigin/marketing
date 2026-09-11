@@ -15,7 +15,7 @@ const APPLIANCE_TYPE_KEYWORDS = [
   '커피머신','믹서기','선풍기','히터','온풍기','보일러',
   '노트북','모니터','스피커','이어폰','헤드폰','프린터','텔레비전','TV',
 ];
-function simplifyApplianceName(name) {
+export function simplifyApplianceName(name) {
   const kw = APPLIANCE_TYPE_KEYWORDS.find((k) => String(name || '').includes(k));
   return kw || null;
 }
