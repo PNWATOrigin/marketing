@@ -158,6 +158,7 @@ export async function cleanupExpiredJobs() {
 
     if (job.outputPath && fssync.existsSync(job.outputPath)) {
       await fs.rm(job.outputPath.replace(/\.mp4$/,'.sources.zip'),{force:true}).catch(()=>{});
+      await fs.rm(job.outputPath.replace(/\.mp4$/,'.timeline.xml'),{force:true}).catch(()=>{});
       await fs.rm(job.outputPath, { force: true }).catch(() => {});
     }
     const workDir = path.join(config.workDir, job.id);

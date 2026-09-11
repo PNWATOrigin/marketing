@@ -33,15 +33,30 @@ export async function writeZip(destination, entries){
  }finally{await file.close();}
 }
 const stamp=t=>{const ms=Math.round(t*1000);return `${String(Math.floor(ms/3600000)).padStart(2,'0')}:${String(Math.floor(ms/60000)%60).padStart(2,'0')}:${String(Math.floor(ms/1000)%60).padStart(2,'0')},${String(ms%1000).padStart(3,'0')}`;};
+const xmlEscape=value=>String(value).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]));
+export function timelineXml(shots){
+ const rate='<rate><timebase>30</timebase><ntsc>FALSE</ntsc></rate>';
+ const duration=Math.round(Math.max(...shots.map(s=>s.end),0)*30);
+ const clip=(asset,start,end,id,audio=false,gain=1)=>{
+  const first=Math.round(start*30),last=Math.round(end*30),length=last-first;
+  return `<clipitem id="clip-${id}"><name>${xmlEscape(asset)}</name><duration>${length}</duration>${rate}<start>${first}</start><end>${last}</end><in>0</in><out>${length}</out><file id="file-${id}"><name>${xmlEscape(asset.split('/').pop())}</name><pathurl>file://localhost/${xmlEscape(asset)}</pathurl>${rate}<duration>${duration}</duration><media>${audio?'<audio><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate></samplecharacteristics><channelcount>2</channelcount></audio>':'<video><stillframe>TRUE</stillframe></video>'}</media></file>${audio?`<sourcetrack><mediatype>audio</mediatype><trackindex>1</trackindex></sourcetrack><filter><effect><name>Audio Levels</name><effectid>audiolevels</effectid><effectcategory>audiolevels</effectcategory><effecttype>audio</effecttype><mediatype>audio</mediatype><parameter><parameterid>level</parameterid><name>Level</name><value>${gain}</value></parameter></effect></filter>`:''}</clipitem>`;
+ };
+ return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xmeml>
+<xmeml version="5"><sequence id="product-shortform"><name>Product Shortform</name><duration>${duration}</duration>${rate}<media><video><format><samplecharacteristics>${rate}<width>1080</width><height>1920</height><anamorphic>FALSE</anamorphic><pixelaspectratio>square</pixelaspectratio><fielddominance>none</fielddominance></samplecharacteristics></format><track>${shots.map((s,i)=>clip(s.asset,s.start,s.end,i)).join('')}</track></video><audio><numOutputChannels>2</numOutputChannels><format><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate></samplecharacteristics></format><track>${clip('audio/bgm.mp3',0,duration/30,'bgm',true,0.35)}</track><track>${clip('audio/boing-timed.wav',0,duration/30,'sfx',true)}</track></audio></media></sequence></xmeml>`;
+}
 export async function exportSources({outputPath,scenes,cues,bgm,effects}){
  const paths=[...new Set(scenes.map(s=>s.imagePath))];
  const names=paths.map((p,i)=>`media/product-${i+1}${path.extname(p)}`);
  const shots=scenes.map(s=>({start:s.start,end:s.end,asset:names[paths.indexOf(s.imagePath)],transition:'cut',fit:'contain'}));
+ const xml=timelineXml(shots);
+ await fs.writeFile(outputPath.replace(/\.mp4$/,'.timeline.xml'),xml,'utf8');
  await writeZip(outputPath.replace(/\.mp4$/,'.sources.zip'),[
   ...paths.map((p,i)=>({name:names[i],path:p})),
   {name:'audio/bgm.mp3',path:bgm},{name:'audio/boing-timed.wav',path:effects},
   {name:'captions.srt',text:cues.map((c,i)=>`${i+1}\n${stamp(c.start)} --> ${stamp(c.end)}\n${c.text}\n`).join('\n')},
+  {name:'timeline.xml',text:xml},
   {name:'timeline.json',text:JSON.stringify({width:1080,height:1920,fps:30,shots,bgmVolume:0.35,effectsVolume:1},null,2)},
-  {name:'README.txt',text:'편집용 소스 묶음 (완성 MP4와 별개)\n압축을 풀고 media 파일과 audio 파일을 편집기에 가져오세요.\n1080x1920 / 30fps 시퀀스에서 timeline.json의 start/end(초)에 맞춰 이미지를 배치하세요.\nboing-timed.wav는 0초부터 놓으면 자막 등장 시점과 맞습니다. BGM 음량은 35%, 길이는 15초로 맞추세요.\ncaptions.srt에는 수정 가능한 문구와 시간이 있습니다. 편집기에서 자막 파일 가져오기를 지원하면 사용하세요.\nCapCut/프리미어의 네이티브 프로젝트 파일은 아닙니다. 이미지 배치와 글꼴/색상은 편집기에서 설정해야 합니다.\n'},
+  {name:'README.txt',text:'편집용 소스 묶음 (완성 MP4와 별개)\n압축을 풀고 media 파일과 audio 파일을 편집기에 가져오세요.\n1080x1920 / 30fps 시퀀스에서 timeline.json의 start/end(초)에 맞춰 이미지를 배치하세요.\nboing-timed.wav는 0초부터 놓으면 자막 등장 시점과 맞습니다. BGM 음량은 35%, 길이는 15초로 맞추세요.\ncaptions.srt에는 수정 가능한 문구와 시간이 있습니다. 편집기에서 자막 파일 가져오기를 지원하면 사용하세요.\n프리미어: timeline.xml을 가져온 후 누락된 미디어 연결에서 이 폴더의 media/audio 파일을 선택하세요. XML에는 영상과 오디오 컷 타이밍이 포함됩니다. 자막은 captions.srt를 별도로 가져오세요. 이미지 크기/글꼴은 조정이 필요할 수 있습니다. XML 단독에는 소재가 없으므로 ZIP도 필요합니다. 캡컷은 소재와 SRT를 직접 가져오세요.\n'},
  ]);
 }
