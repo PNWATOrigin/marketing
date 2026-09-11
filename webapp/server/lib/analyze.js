@@ -272,8 +272,11 @@ export function analyzeHtml(html, pageUrl) {
     }) : [];
   let images = dedupeImages(ohou ? [...gallery, ...fromOg.images,...fromMeta.images.filter(u=>/shop-phinf|detail|description/i.test(u))] : [...fromJsonLd.images, ...fromOg.images, ...fromMeta.images], 16);
 
-  const detailOnly=['nutrime.co.kr','www.nutrime.co.kr'].includes(new URL(pageUrl).hostname);
-  if(detailOnly) images=dedupeImages($('#strict-product-detail img[src*="/data/editor/goods/"]').toArray().map(el=>toAbsoluteUrl(pageUrl,$(el).attr('src'))),16);
+  if (['nutridday.com','www.nutridday.com'].includes(new URL(pageUrl).hostname)) {
+    images=dedupeImages($('#prdDetail .cont img').toArray().map(el=>toAbsoluteUrl(pageUrl,$(el).attr('ec-data-src')||$(el).attr('data-src')||$(el).attr('src'))).filter(u=>u&&!/banner|delivery/i.test(u)),16);
+  }
+  const detailOnly=['nutrime.co.kr','www.nutrime.co.kr','nutridday.com','www.nutridday.com'].includes(new URL(pageUrl).hostname);
+  if(['nutrime.co.kr','www.nutrime.co.kr'].includes(new URL(pageUrl).hostname)) images=dedupeImages($('#strict-product-detail img[src*="/data/editor/goods/"]').toArray().map(el=>toAbsoluteUrl(pageUrl,$(el).attr('src'))),16);
 
   // JSON-LD/OG/메타로 이름·가격·이미지를 하나도 못 찾았을 때만 SPA 임베디드 상태를 확인한다.
   if (!name || price == null || images.length === 0) {

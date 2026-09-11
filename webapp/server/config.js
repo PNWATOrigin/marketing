@@ -44,7 +44,7 @@ export const config = {
   ttsTimeoutMs: int('TTS_TIMEOUT_MS', 20000),
 
   maxHtmlBytes: int('MAX_HTML_BYTES', 3 * 1024 * 1024),
-  maxImageBytes: int('MAX_IMAGE_BYTES', 8 * 1024 * 1024),
+  maxImageBytes: int('MAX_IMAGE_BYTES', 12 * 1024 * 1024),
   maxImages: int('MAX_IMAGES', 8),
 
   maxRenderAttempts: int('MAX_RENDER_ATTEMPTS', 2),

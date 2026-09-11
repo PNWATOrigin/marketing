@@ -15,7 +15,7 @@ const CATEGORIES = new Set(['auto', 'digital', 'health']);
 // 도메인 목록으로 우선 판단하고, 목록에 없는 개별 브랜드 자사몰은 .kr 도메인이면 허용한다.
 const KOREAN_MALL_DOMAINS = [
   // 오픈마켓 · 종합몰
-  'coupang.com', 'gmarket.co.kr', 'auction.co.kr', '11st.co.kr', 'ssg.com',
+  'nutridday.com', 'coupang.com', 'gmarket.co.kr', 'auction.co.kr', '11st.co.kr', 'ssg.com',
   'lotteon.com', 'lotteimall.com', 'tmon.co.kr', 'wemakeprice.com', 'interpark.com',
   'oliveyoung.co.kr', 'musinsa.com', 'kurly.com', 'naver.com', 'ohou.se',
   // TV홈쇼핑
