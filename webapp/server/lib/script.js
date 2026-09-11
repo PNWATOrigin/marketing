@@ -51,6 +51,29 @@ const HEALTH_BRAND_SCRIPTS=[
  {line1:'건강을 생각하는 순간 가장 먼저 떠오르는 브랜드가 있다면 좋겠죠.',line2:'매일의 선택에 건강한 기준을 더하고,',line3:'더 나은 일상을 고민하는 [브랜드명]입니다.'},
  {line1:'건강한 삶은 거창한 계획보다 매일의 선택에서 시작되니까.',line2:'오늘도 더 좋은 습관을 고민하고,',line3:'당신의 건강한 일상과 함께하는 [브랜드명]입니다.'},
 ];
+// 건강기능식품 조회수 확보형 전용 나레이션 20종 - 궁금증 유발형, 자리표시자 없음.
+const HEALTH_VIEWS_SCRIPTS=[
+ {line1:'건강식품, 많이 먹는다고 좋은 건 아니라는 거 알고 계셨나요?',line2:'저도 이것저것 챙겨 먹다가 알게 됐는데요.',line3:'중요한 건 따로 있더라고요.'},
+ {line1:'건강 챙긴다고 이것저것 다 먹고 있다면 잠깐만요.',line2:'저도 예전에는 많을수록 좋은 줄 알았거든요.',line3:'그런데 찾아볼수록 생각이 달라졌습니다.'},
+ {line1:'요즘 건강식품 고를 때 이것부터 확인한다고 합니다.',line2:'저는 예전까지 성분표를 제대로 보지도 않았는데요.',line3:'알고 보니 꼭 봐야 할 부분이 있더라고요.'},
+ {line1:'혹시 건강식품 사놓고 잘 안 챙겨 드시나요?',line2:'저도 똑같았어요.',line3:'결국 중요한 건 좋은 제품보다 꾸준히 챙길 수 있는 습관이더라고요.'},
+ {line1:'건강식품이 다 비슷해 보인다면 이걸 한번 보세요.',line2:'겉으로는 비슷해 보여도 확인해야 할 부분이 꽤 많습니다.',line3:'저도 비교해보고 처음 알았어요.'},
+ {line1:'요즘 주변에서 이걸 챙겨 먹는 사람이 부쩍 많아졌어요.',line2:'처음엔 그냥 유행인 줄 알았는데요.',line3:'알아보니까 사람들이 찾는 이유가 있더라고요.'},
+ {line1:'건강식품 고를 때 광고만 보고 결정하고 있진 않으세요?',line2:'저도 그랬는데요.',line3:'이제는 제품을 볼 때 꼭 확인하는 기준이 생겼습니다.'},
+ {line1:'매일 챙겨 먹는 건강식품, 아무거나 골라도 될까요?',line2:'저도 별생각 없이 골랐는데요.',line3:'하나씩 비교해보니까 생각보다 차이가 많더라고요.'},
+ {line1:'이런 생활습관을 가지고 있다면 한번 확인해보세요.',line2:'저도 평소에는 대수롭지 않게 생각했는데,',line3:'생각보다 많은 사람들이 공감하더라고요.'},
+ {line1:'건강관리를 시작하려고 마음먹은 분들 많으시죠?',line2:'그런데 처음부터 이것저것 시작할 필요는 없더라고요.',line3:'작은 습관 하나부터 시작해봤습니다.'},
+ {line1:'건강식품을 꾸준히 먹는 사람들은 뭘 보고 고를까요?',line2:'저도 궁금해서 주변에 물어봤는데요.',line3:'생각보다 공통적으로 보는 기준이 있었습니다.'},
+ {line1:'혹시 여러분도 이런 경험 있으세요?',line2:'좋다고 해서 샀는데 며칠 먹다가 그대로 방치하는 거요.',line3:'저도 그래서 선택 기준을 바꿔봤습니다.'},
+ {line1:'비슷해 보이는 건강식품인데 가격 차이가 나는 이유, 궁금하지 않으세요?',line2:'저도 처음에는 이해가 안 됐는데요.',line3:'하나씩 비교해보니 이유가 있더라고요.'},
+ {line1:'건강을 챙기려고 하면 왜 이렇게 알아볼 게 많을까요?',line2:'저도 뭘 골라야 할지 몰라서 한참 찾아봤는데요.',line3:'생각보다 간단한 기준이 있었습니다.'},
+ {line1:'요즘 건강식품을 고를 때 예전과 달라진 게 하나 있어요.',line2:'무조건 유명한 제품부터 보는 게 아니라,',line3:'내 생활에 꾸준히 맞는지를 먼저 보게 됐습니다.'},
+ {line1:'이걸 알고 나니까 건강식품 보는 눈이 달라졌어요.',line2:'예전에는 포장이나 광고만 봤는데,',line3:'지금은 가장 먼저 확인하는 게 따로 있습니다.'},
+ {line1:'건강식품은 무조건 비싼 게 좋은 걸까요?',line2:'저도 그렇게 생각했는데요.',line3:'가격보다 먼저 비교해봐야 할 것들이 있더라고요.'},
+ {line1:'매일 먹는 건데도 의외로 많은 사람들이 놓치는 게 있습니다.',line2:'저 역시 모르고 지나쳤는데요.',line3:'알고 나니까 제품을 고르는 기준이 달라졌어요.'},
+ {line1:'건강식품 하나 고르는데 이렇게까지 비교한다고?',line2:'저도 처음엔 그렇게 생각했어요.',line3:'그런데 매일 챙기는 거라면 꼼꼼하게 보는 게 맞더라고요.'},
+ {line1:'이건 저만 몰랐던 건가요?',line2:'주변 사람들은 이미 알고 챙기고 있더라고요.',line3:'저도 알아보기 시작했는데, 생각보다 재미있는 차이가 있었습니다.'},
+];
 // 이름 기준으로 목록 중 하나를 고정 선택한다(같은 상품이면 항상 같은 톤, 상품마다는 다양하게).
 function pickByHash(name,list){
  let h=0; for(const ch of String(name)) h=(h*31+ch.charCodeAt(0))>>>0;
@@ -65,6 +88,12 @@ export function generateScript(product,purposeId,category='auto') {
  const feature=short(features[0]||name), next=short(features[1]||'상품 구성을 확인해 보세요');
  const point3=short(features[2]||feature);
  const point4=short(features[3]||next);
+ if(category==='health'&&purposeId==='views'){
+  const t=pickByHash(product.name||name,HEALTH_VIEWS_SCRIPTS);
+  const fill=(s)=>short(s,48);
+  const healthLines=[[fill(t.line1),null],[fill(t.line2),null],[fill(t.line3),null],[name,feature],['이거 좋아할 친구에게','지금 공유해 주세요']];
+  return {purpose:purposeId,totalDuration:15,scenes:healthLines.map(([headline,sub],i)=>({key:['hook','problem','benefit','brand','cta'][i],start:i*3,end:(i+1)*3,duration:3,headline,sub}))};
+ }
  if(category==='health'&&purposeId==='sales'){
   const t=pickByHash(product.name||name,HEALTH_SALES_SCRIPTS);
   const fill=(s)=>short(s.replace('[제품]',name),48);
