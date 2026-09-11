@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>숏폼 스튜디오 — URL 하나로 15초 세로형 마케팅 영상</title>
   <meta name="description" content="상품 URL만 입력하면 상품 정보를 자동으로 분석해 9:16 세로형 15초 마케팅 영상을 만들어드려요." />
-  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/styles.css?v=result-art-1" />
 </head>
 <body>
   <header class="site-header">
@@ -89,15 +89,15 @@
           <video id="result-video" class="result-video" controls playsinline></video>
         </div>
         <div class="result-actions">
-          <a id="download-btn" class="btn btn-img" href="#" download><img src="/img/btn-download.png" alt="MP4 다운로드" /></a>
-          <button id="sources-btn" class="btn btn-ghost" hidden>소스 다운로드</button>
+          <a id="download-btn" class="btn result-art art-mp4" href="#" download aria-label="MP4 다운로드"><img src="/img/result-actions.png" alt="" /></a>
+          <button id="sources-btn" class="btn result-art art-sources" aria-label="소스 다운로드" hidden><img src="/img/result-actions.png" alt="" /></button>
           <dialog id="source-options" class="source-dialog" aria-labelledby="source-title">
             <button id="source-close" class="source-close" aria-label="닫기" type="button">×</button>
             <h3 id="source-title">소스 다운로드</h3>
             <div class="source-choices"><button id="source-zip" class="btn btn-ghost">소스 ZIP</button><button id="source-xml" class="btn btn-ghost">프리미어 XML</button></div>
             <p>XML 사용 시 ZIP 소재도 필요해요.</p>
           </dialog>
-          <button id="remake-btn" class="btn btn-img"><img src="/img/btn-remake.png" alt="다시 만들기" /></button>
+          <button id="remake-btn" class="btn result-art art-remake" aria-label="다시 만들기"><img src="/img/result-actions.png" alt="" /></button>
         </div>
       </div>
     </section>

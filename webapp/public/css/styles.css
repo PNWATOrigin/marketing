@@ -766,3 +766,13 @@ body {
 .source-choices { display:flex; gap:10px; flex-wrap:wrap; }
 .source-choices .btn { flex:1; white-space:nowrap; }
 .source-dialog p { margin:16px 0 0; font-size:12px; }
+
+.result-actions > .result-art { position:relative; display:block; padding:0; min-width:0; border:0; border-radius:999px; background:transparent; overflow:hidden; aspect-ratio:650 / 207; box-shadow:none; }
+.result-actions > .result-art[hidden] { display:none; }
+.result-art img { position:absolute; top:0; height:100%; width:auto; max-width:none; pointer-events:none; }
+.art-mp4 img { left:0; }
+.result-actions > .art-sources { aspect-ratio:735 / 207; flex:1.13; }
+.art-sources img { left:-92.52%; }
+.art-remake img { left:-223.08%; }
+.result-art:focus-visible { outline:3px solid #a855f7; outline-offset:3px; }
+.result-art:disabled { opacity:.5; cursor:wait; }
