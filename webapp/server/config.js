@@ -33,6 +33,15 @@ export const config = {
   // 최선 노력으로 건너뛰고 상품 분석/렌더링 자체는 계속 진행된다.
   ocrTimeoutMs: int('OCR_TIMEOUT_MS', 6000),
   cutoutTimeoutMs: int('CUTOUT_TIMEOUT_MS', 12000),
+  // 기본은 무료 로컬 OCR(tesseract). 나중에 외부 Vision OCR을 연결하려면
+  // OCR_PROVIDER=vision + OCR_VISION_API_KEY를 설정하면 되고, 키가 없거나
+  // 요청이 실패하면 항상 로컬 OCR로 되돌아간다(비용 발생 없이 계속 동작).
+  ocrProvider: process.env.OCR_PROVIDER || 'local',
+  ocrVisionApiKey: process.env.OCR_VISION_API_KEY || null,
+
+  // 나레이션 음성 자동 합성(무료 TTS) 설정.
+  narrationVoice: process.env.NARRATION_VOICE || 'ko-KR-SunHiNeural',
+  ttsTimeoutMs: int('TTS_TIMEOUT_MS', 20000),
 
   maxHtmlBytes: int('MAX_HTML_BYTES', 3 * 1024 * 1024),
   maxImageBytes: int('MAX_IMAGE_BYTES', 8 * 1024 * 1024),

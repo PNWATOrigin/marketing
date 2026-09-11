@@ -3,6 +3,7 @@ import fssync from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { config } from '../config.js';
+import { simplifyApplianceName } from './script.js';
 
 // 작업 상태 흐름: queued -> analyzing -> awaiting_purpose -> (사용자가 목적 선택) ->
 //                queued -> scripting -> rendering -> completed / failed
@@ -93,9 +94,14 @@ export function toPublicJob(job) {
     product: job.product
       ? {
           name: job.product.name,
+          // 디지털/가전 상품명은 브랜드·스펙·옵션이 잔뜩 붙어("삼성전자 무풍 AI...")
+          // 분석 화면에 그대로 보여주면 어색해서, 알아본 제품 종류(에어컨 등)가 있으면
+          // 짧게 보여줄 이름을 함께 내려준다. 없으면 원래 이름을 그대로 쓴다.
+          displayName: (job.category === 'digital' && simplifyApplianceName(job.product.name)) || job.product.name,
           brand: job.product.brand,
           price: job.product.price,
           originalPrice: job.product.originalPrice,
+          priceSource: job.product.priceSource || null,
           currency: job.product.currency,
           description: job.product.description,
           images: job.product.images.slice(0, 3),

@@ -4,6 +4,21 @@ export const PURPOSES = {
  brand: {id:'brand',label:'브랜드 인지도형',metrics:['생활 공감','브랜드 각인','기억 유도']},
 };
 const short=(text,n=26)=>String(text||'').replace(/\s+/g,' ').trim().slice(0,n);
+// 디지털/가전 상품명은 "삼성전자 무풍 AI 1등급 에어컨 벽걸이 인버터 7평..."처럼
+// 브랜드·스펙·옵션이 잔뜩 붙어 나레이션에 그대로 쓰기엔 너무 길고 어색한 경우가
+// 많다. 이런 경우 이름 안에서 실제 제품 종류를 나타내는 핵심 단어만 찾아 짧게
+// 쓴다. 못 찾으면 지어내지 않고 원래 이름을 그대로 쓴다.
+const APPLIANCE_TYPE_KEYWORDS = [
+  '무선청소기','로봇청소기','핸디청소기','청소기',
+  '에어컨','냉장고','세탁기','건조기','식기세척기','전자레인지',
+  '공기청정기','제습기','가습기','정수기','스타일러','인덕션',
+  '커피머신','믹서기','선풍기','히터','온풍기','보일러',
+  '노트북','모니터','스피커','이어폰','헤드폰','프린터','텔레비전','TV',
+];
+export function simplifyApplianceName(name) {
+  const kw = APPLIANCE_TYPE_KEYWORDS.find((k) => String(name || '').includes(k));
+  return kw || null;
+}
 // 건강기능식품 판매전환형 전용 나레이션 20종 - 공감형 후킹 문구 + [제품] 자리표시자.
 // 상품마다(이름 기준) 하나를 골라 [제품]을 실제 상품명으로 채워 넣는다.
 const HEALTH_SALES_SCRIPTS=[
@@ -151,8 +166,9 @@ function pickByHash(name,list){
 // No model calls. Claims come only from extracted product fields.
 export function generateScript(product,purposeId,category='auto') {
  if(!PURPOSES[purposeId]) throw new Error('알 수 없는 목적입니다.');
- const name=short(product.name||'이 상품');
- const brand=short(product.brand||product.name||'이 상품',20);
+ const applianceType = category==='digital' ? simplifyApplianceName(product.name) : null;
+ const name=short(applianceType||product.name||'이 상품');
+ const brand=short(product.brand||applianceType||product.name||'이 상품',20);
  const features=(product.features||[]).filter(Boolean);
  const feature=short(features[0]||name), next=short(features[1]||'상품 구성을 확인해 보세요');
  const point3=short(features[2]||feature);

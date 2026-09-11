@@ -250,8 +250,19 @@ export function analyzeHtml(html, pageUrl) {
     ? cleanText($('a[aria-label$="브랜드 페이지로 이동"]').first().text(), 40) || null
     : null);
   const description = fromJsonLd.description || fromOg.description || fromMeta.description || null;
-  let price = fromJsonLd.price ?? fromOg.price ?? (ohou ? num((fromOg.description || '').match(/([\d,]+)원/)?.[1]) : null);
+  // 가격은 구조화 데이터(JSON-LD/OG)를 가장 신뢰하지만, 본문 텍스트에서 찾은 가격과
+  // 크게 다르면 페이지 안에 서로 다른 가격 표기가 있다는 뜻이라 사용자에게 알려야 한다
+  // (예: 정가/행사가 파싱 오류, 다른 옵션의 가격이 섞여 들어온 경우 등).
+  const structuredPrice = fromJsonLd.price ?? fromOg.price ?? (ohou ? num((fromOg.description || '').match(/([\d,]+)원/)?.[1]) : null);
+  let price = structuredPrice ?? bodyHints.price;
   const originalPrice = fromJsonLd.originalPrice ?? null;
+  let priceConflictWarning = null;
+  if (structuredPrice != null && bodyHints.price != null && structuredPrice !== bodyHints.price) {
+    const diffRatio = Math.abs(structuredPrice - bodyHints.price) / Math.max(structuredPrice, bodyHints.price);
+    if (diffRatio > 0.05) {
+      priceConflictWarning = `페이지에 서로 다른 가격 정보가 있어요(${structuredPrice.toLocaleString()}원 / ${bodyHints.price.toLocaleString()}원). 실제 페이지에서 정확한 가격을 확인해주세요.`;
+    }
+  }
 
   const gallery = ohou ? $('img[alt^="상품 이미지"]').toArray()
     .sort((a,b) => Number($(a).attr('alt').replace(/\D/g,''))-Number($(b).attr('alt').replace(/\D/g,'')))
@@ -288,6 +299,7 @@ export function analyzeHtml(html, pageUrl) {
   if (price == null) warnings.push('가격 정보를 찾지 못했어요.');
   if (images.length === 0) warnings.push('사용할 수 있는 이미지를 찾지 못했어요.');
   if (blockedClaims > 0) warnings.push('검증되지 않은 과장된 표현이 포함된 문구는 제외했어요.');
+  if (priceConflictWarning) warnings.push(priceConflictWarning);
 
   return {
     sourceUrl: pageUrl,
@@ -295,6 +307,12 @@ export function analyzeHtml(html, pageUrl) {
     brand,
     price,
     originalPrice: originalPrice != null && price != null && originalPrice > price ? originalPrice : null,
+    // 가격을 어디서 가져왔는지, 충돌하는 다른 값이 있었는지 함께 남긴다(출처 추적).
+    priceSource: {
+      structured: structuredPrice,
+      bodyText: bodyHints.price,
+      conflict: !!priceConflictWarning,
+    },
     currency,
     description,
     features,
