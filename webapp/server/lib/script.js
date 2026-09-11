@@ -120,6 +120,29 @@ const DIGITAL_BRAND_SCRIPTS=[
  {line1:'기술은 어려울 필요가 없습니다.',line2:'누구나 쉽게 쓰고',line3:'자연스럽게 편리함을 느낄 수 있어야 하니까.',line4:'사람을 생각하는 [브랜드명]입니다.'},
  {line1:'좋은 가전은',line2:'생활 속에서 존재감이 크지 않을 수도 있습니다.',line3:'그만큼 자연스럽게 우리의 일상에 녹아드는 것.',line4:'매일의 편리함을 만드는 [브랜드명]입니다.'},
 ];
+// 디지털/가전 판매전환형 전용 나레이션 20종 - [제품명] 자리표시자, 4줄 구성.
+const DIGITAL_SALES_SCRIPTS=[
+ {line1:'아직도 이 불편함을 참고 계신가요?',line2:'매일 반복되는 번거로움, 이제 바꿔보세요.',line3:'더 편리한 일상을 만들어주는 [제품명],',line4:'지금 직접 확인해보세요.'},
+ {line1:'가전 살 때 뭘 봐야 할지 고민되시죠?',line2:'디자인만 볼 게 아니라 실제 사용성까지 봐야 합니다.',line3:'매일 쓰기 좋은 [제품명],',line4:'어떤 차이가 있는지 확인해보세요.'},
+ {line1:'비슷해 보이는 가전, 정말 똑같을까요?',line2:'직접 사용해보면 생각보다 차이가 큽니다.',line3:'일상의 편리함을 바꿔줄 [제품명],',line4:'지금 비교해보세요.'},
+ {line1:'가전 사고 나서 아쉬웠던 적 있으시죠?',line2:'살 때는 몰랐던 불편함이 꼭 생기더라고요.',line3:'사용성을 꼼꼼하게 담은 [제품명],',line4:'구매 전에 확인해보세요.'},
+ {line1:'아직도 매일 이걸 직접 하고 계세요?',line2:'반복되는 일을 줄이면 하루가 훨씬 편해집니다.',line3:'생활의 번거로움을 덜어주는 [제품명],',line4:'지금 확인해보세요.'},
+ {line1:'이 기능 하나가 생각보다 편리합니다.',line2:'매일 사용하는 가전일수록',line3:'작은 기능 하나가 사용 경험을 바꾸거든요.',line4:'[제품명], 직접 확인해보세요.'},
+ {line1:'가전 하나 바꾼다고 뭐가 달라질까 했는데요.',line2:'매일 사용하는 제품이라 그런지',line3:'작은 차이가 계속 쌓이더라고요.',line4:'[제품명]으로 직접 경험해보세요.'},
+ {line1:'가전은 사고 나서 후회하면 늦잖아요.',line2:'가격만 보지 말고',line3:'내가 매일 어떻게 사용할지를 먼저 보세요.',line4:'그 기준에 맞는 [제품명], 확인해보세요.'},
+ {line1:'매일 하는 일을 조금이라도 줄이고 싶다면?',line2:'가전은 편리함이 가장 중요하잖아요.',line3:'일상을 더 간편하게 만들어주는 [제품명],',line4:'지금 만나보세요.'},
+ {line1:'이거 모르고 가전 사면 아쉬울 수 있습니다.',line2:'생각보다 많은 사람들이 스펙만 보고 결정하거든요.',line3:'실제 사용까지 생각한 [제품명],',line4:'지금 확인해보세요.'},
+ {line1:'아직도 가전을 단순하게만 사용하고 계신가요?',line2:'이제는 생활에 맞춰 더 스마트하게 사용할 수 있습니다.',line3:'일상을 바꿔주는 [제품명],',line4:'어떤 차이가 있는지 확인해보세요.'},
+ {line1:'하루에 몇 번씩 반복하는 일,',line2:'생각보다 시간을 많이 쓰고 있습니다.',line3:'작은 번거로움을 줄여주는 [제품명],',line4:'더 편한 하루를 시작해보세요.'},
+ {line1:'가전 구매를 고민하고 있다면 이것만 보세요.',line2:'결국 중요한 건 매일 편하게 사용할 수 있느냐입니다.',line3:'실용성을 담은 [제품명],',line4:'지금 자세히 확인해보세요.'},
+ {line1:'비슷한 제품이 많은데 뭘 골라야 할까요?',line2:'결국 직접 사용할 때 느껴지는 차이가 중요합니다.',line3:'사용성을 생각한 [제품명],',line4:'지금 비교해보세요.'},
+ {line1:'매일 쓰는 가전, 그냥 익숙해서 참고 쓰고 있진 않나요?',line2:'조금 더 편한 방법이 있을 수도 있습니다.',line3:'일상의 불편함을 줄이는 [제품명],',line4:'지금 확인해보세요.'},
+ {line1:'무조건 비싼 가전이 좋은 건 아닙니다.',line2:'중요한 건 내가 얼마나 자주, 편하게 쓰느냐죠.',line3:'실생활에 필요한 기능을 담은 [제품명],',line4:'꼼꼼하게 확인해보세요.'},
+ {line1:'처음엔 없어도 괜찮다고 생각했는데요.',line2:'한번 사용해보니까 왜 필요한지 알겠더라고요.',line3:'생활을 더 편하게 바꿔주는 [제품명],',line4:'직접 확인해보세요.'},
+ {line1:'지금 가전을 바꿀 생각이라면 잠깐만요.',line2:'눈에 보이는 디자인보다',line3:'실제 사용할 때의 편리함을 먼저 확인해보세요.',line4:'[제품명], 지금 살펴보세요.'},
+ {line1:'매일 반복되는 작은 불편함,',line2:'그냥 참는 게 당연하다고 생각하셨나요?',line3:'더 간편한 일상을 위한 선택, [제품명].',line4:'지금 확인해보세요.'},
+ {line1:'가전은 한번 사면 오래 사용하잖아요.',line2:'그래서 처음 선택이 더 중요합니다.',line3:'편리함과 사용성을 꼼꼼하게 생각한 [제품명],',line4:'지금 구매 전에 확인해보세요.'},
+];
 // 이름 기준으로 목록 중 하나를 고정 선택한다(같은 상품이면 항상 같은 톤, 상품마다는 다양하게).
 function pickByHash(name,list){
  let h=0; for(const ch of String(name)) h=(h*31+ch.charCodeAt(0))>>>0;
@@ -157,6 +180,12 @@ export function generateScript(product,purposeId,category='auto') {
   const t=pickByHash(product.name||name,DIGITAL_VIEWS_SCRIPTS);
   const fill=(s)=>short(s,48);
   const digitalLines=[[fill(t.line1),null],[fill(t.line2),null],[fill(t.line3),null],[fill(t.line4),null],['이거 좋아할 친구에게','지금 공유해 주세요']];
+  return {purpose:purposeId,totalDuration:15,scenes:digitalLines.map(([headline,sub],i)=>({key:['hook','problem','benefit','brand','cta'][i],start:i*3,end:(i+1)*3,duration:3,headline,sub}))};
+ }
+ if(!vacuum&&category==='digital'&&purposeId==='sales'){
+  const t=pickByHash(product.name||name,DIGITAL_SALES_SCRIPTS);
+  const fill=(s)=>short(s.replace('[제품명]',name),48);
+  const digitalLines=[[fill(t.line1),null],[fill(t.line2),null],[fill(t.line3),null],[fill(t.line4),null],['상품 구성과 혜택','지금 확인하세요']];
   return {purpose:purposeId,totalDuration:15,scenes:digitalLines.map(([headline,sub],i)=>({key:['hook','problem','benefit','brand','cta'][i],start:i*3,end:(i+1)*3,duration:3,headline,sub}))};
  }
  if(!vacuum&&category==='digital'&&purposeId==='brand'){
