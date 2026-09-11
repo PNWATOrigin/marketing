@@ -91,7 +91,12 @@
         <div class="result-actions">
           <a id="download-btn" class="btn btn-img" href="#" download><img src="/img/btn-download.png" alt="MP4 다운로드" /></a>
           <button id="sources-btn" class="btn btn-ghost" hidden>소스 다운로드</button>
-          <div id="source-options" hidden><button id="source-zip" class="btn btn-ghost">ZIP · 전체 소스</button><button id="source-xml" class="btn btn-ghost">XML · 프리미어 타임라인</button><p>XML 사용 시 ZIP도 내려받아 압축을 풀고 미디어를 연결해주세요. 자막은 ZIP의 SRT를 가져오세요.</p></div>
+          <dialog id="source-options" class="source-dialog" aria-labelledby="source-title">
+            <button id="source-close" class="source-close" aria-label="닫기" type="button">×</button>
+            <h3 id="source-title">소스 다운로드</h3>
+            <div class="source-choices"><button id="source-zip" class="btn btn-ghost">소스 ZIP</button><button id="source-xml" class="btn btn-ghost">프리미어 XML</button></div>
+            <p>XML 사용 시 ZIP 소재도 필요해요.</p>
+          </dialog>
           <button id="remake-btn" class="btn btn-img"><img src="/img/btn-remake.png" alt="다시 만들기" /></button>
         </div>
       </div>
@@ -115,6 +120,6 @@
     <p>© 2026 PNWAT. All Rights Reserved.</p>
   </footer>
 
-  <script src="/js/app.js?v=20260911-progress"></script>
+  <script src="/js/app.js?v=20260911-source-popup"></script>
 </body>
 </html>

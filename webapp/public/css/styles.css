@@ -758,3 +758,11 @@ body {
     transform: none;
   }
 }
+
+.source-dialog { border:1px solid #fff; border-radius:24px; padding:28px; width:min(360px,calc(100vw - 40px)); box-sizing:border-box; background:#f0f7ff; color:#51085f; box-shadow:0 16px 60px #28174133; }
+.source-dialog::backdrop { background:#18223c66; }
+.source-dialog h3 { margin:0 30px 20px 0; }
+.source-close { position:absolute; right:12px; top:8px; width:36px; height:36px; border:0; background:transparent; color:inherit; font-size:28px; cursor:pointer; }
+.source-choices { display:flex; gap:10px; flex-wrap:wrap; }
+.source-choices .btn { flex:1; white-space:nowrap; }
+.source-dialog p { margin:16px 0 0; font-size:12px; }

@@ -97,8 +97,10 @@
   const downloadBtn = document.getElementById('download-btn');
   const sourcesBtn = document.getElementById('sources-btn');
   const sourceOptions=document.getElementById('source-options');
-  sourcesBtn.addEventListener('click',()=>{sourceOptions.hidden=!sourceOptions.hidden;});
+  sourcesBtn.addEventListener('click',()=>{sourceOptions.showModal();});
+  document.getElementById('source-close').addEventListener('click',()=>sourceOptions.close());
   for(const format of ['zip','xml'])document.getElementById(`source-${format}`).addEventListener('click',async()=>{
+    sourceOptions.close();
     sourcesBtn.disabled=true;
     try{
       const response=await fetch(`/api/jobs/${currentJobId}/sources?format=${format}`,{headers:{'X-Client-Id':clientId}});
@@ -302,7 +304,7 @@
         resultVideo.src = src;
         downloadBtn.href = src;
         sourcesBtn.hidden=!job.sourcesReady;
-        sourceOptions.hidden=true;
+        if(sourceOptions.open)sourceOptions.close();
         const name = (job.product?.name || 'shortform-ad').replace(/[^\w가-힣-]+/g, '_').slice(0, 40);
         downloadBtn.setAttribute('download', `shorts studio_${name || 'shortform-ad'}.mp4`);
         showView('result');
