@@ -28,7 +28,7 @@ async function analyzeImage(filePath) {
     }
     return { verdict: 'keep' };
   } catch {
-    return { verdict: 'keep' }; // 분석에 실패하면(포맷 미지원 등) 기존처럼 통과시켜 렌더링 자체는 막지 않는다.
+    return { verdict: 'reject' };
   }
 }
 
@@ -47,7 +47,7 @@ async function isPhotographic(filePath) {
   try {
     const { stdout } = await exec(
       config.ffmpegPath,
-      ['-v', 'error', '-i', filePath, '-vf', `scale=${SIZE}:${SIZE}`, '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'],
+      ['-v', 'error', '-i', filePath, '-vf', `scale=${SIZE}:${SIZE}`, '-frames:v','1','-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'],
       { timeout: 5000, encoding: 'buffer', maxBuffer: 1024 * 1024 }
     );
     const pixels = stdout;
@@ -79,12 +79,12 @@ async function isPhotographic(filePath) {
 async function sliceTallImage(filePath, destDir, index, w, h) {
   const idealSliceHeight = Math.round(w * 1.6); // 세로로 긴 장면(9:16)에 가까운 비율
   const numSlices = Math.min(4, Math.max(2, Math.round(h / idealSliceHeight)));
-  const sliceHeight = Math.floor(h / numSlices);
-  const ext = path.extname(filePath);
+  const sliceHeight = Math.min(h,idealSliceHeight);
+  const ext = '.jpg';
 
   const outputs = [];
   for (let i = 0; i < numSlices; i += 1) {
-    const y = i * sliceHeight;
+    const y = Math.round(i * (h-sliceHeight)/Math.max(1,numSlices-1));
     const outPath = path.join(destDir, `img_${index}_slice${i}${ext}`);
     try {
       await exec(

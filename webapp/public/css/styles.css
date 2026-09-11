@@ -798,3 +798,8 @@ body {
     transform: none;
   }
 }
+/* Existing narration selection follows the product card on desktop and mobile. */
+.narration-card{width:100%;margin:20px 0;text-align:left;display:grid;gap:12px;padding:24px}
+.narration-card h2{font-size:20px;margin:0}.narration-card p{font-size:14px;line-height:1.6;margin:0}
+.narration-card input,.narration-card audio{max-width:100%;width:100%}
+.narration-card label{font-size:14px;font-weight:700}
