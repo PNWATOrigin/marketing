@@ -57,6 +57,31 @@ async function enrichWithImageText(product, workDir) {
   }
 }
 
+// 상품 이미지 최대 3장에 대해 "누끼" 미리보기를 미리 만들어 둔다. 목적 선택 화면에서
+// 사용자가 원본과 누끼 결과를 직접 비교하고 영상에 쓸 쪽을 고를 수 있게 하기 위함이다.
+// 여기서 만든 결과는 렌더링 단계에서 그대로 재사용해 rembg를 두 번 돌리지 않는다.
+// 실패해도(rembg 실패, 이미지 다운로드 실패 등) 미리보기는 부가 기능이므로 빈 배열을
+// 반환하고, 그 경우 렌더링은 기존처럼 자동 누끼 시도로 되돌아간다.
+async function prepareCutoutPreviews(product, jobId) {
+  const targets = (product.images || []).slice(0, 3);
+  if (!targets.length) return [];
+  try {
+    const previewDir = path.join(config.workDir, jobId, 'previews');
+    const originals = await downloadImages(targets, previewDir, { max: 3 });
+    if (!originals.length) return [];
+    const bg = await ensureGradientBackground();
+    return await Promise.all(
+      originals.map(async (originalPath, i) => {
+        const cutoutPath = path.join(previewDir, `cutout_${i}.jpg`);
+        const cutout = await cutoutOnBackground(originalPath, cutoutPath, bg).catch(() => null);
+        return { index: i, original: originalPath, cutout };
+      })
+    );
+  } catch {
+    return [];
+  }
+}
+
 async function runAnalyze(jobId) {
   const job = getJob(jobId);
   if (!job) return;
@@ -65,7 +90,9 @@ async function runAnalyze(jobId) {
     const { html, finalUrl } = await fetchProductPage(job.url);
     const product = analyzeHtml(html, finalUrl);
     await enrichWithImageText(product, path.join(config.workDir, jobId, 'ocr'));
-    updateJob(jobId, { status: 'awaiting_purpose', stage: 'awaiting_purpose', product });
+    const cutoutOptions = await prepareCutoutPreviews(product, jobId);
+    const imageSelections = cutoutOptions.map((o) => (o.cutout ? 'cutout' : 'original'));
+    updateJob(jobId, { status: 'awaiting_purpose', stage: 'awaiting_purpose', product, cutoutOptions, imageSelections });
   } catch (err) {
     updateJob(jobId, { status: 'failed', stage: 'analyzing', error: friendlyError(err) });
   }
@@ -91,15 +118,33 @@ function startProgressWatchdog(jobId) {
   return { report, stop: () => clearInterval(timer) };
 }
 
+async function fileExists(filePath) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // 상세 이미지 배경을 무료 로컬 모델(rembg)로 "누끼"딴 뒤 브랜드 그라데이션 배경 위에
-// 합성해서, 원본 사진 대신 깔끔한 컷아웃 이미지를 장면에 쓸 수 있게 한다. 이미지별로
-// 최선 노력이라 실패하면 그냥 원본 이미지 경로를 그대로 둔다(전체를 막지 않음).
-async function applyCutouts(imagePaths, workDir) {
+// 합성해서, 원본 사진 대신 깔끔한 컷아웃 이미지를 장면에 쓸 수 있게 한다. 목적 선택
+// 화면에서 사용자가 원본/누끼 중 고른 결과(job.imageSelections)가 있으면 그대로 따르고,
+// 이미 만들어둔 미리보기 누끼 파일(job.cutoutOptions)이 있으면 재사용해 다시 계산하지
+// 않는다. 선택 정보가 없으면(미리보기 생성 실패 등) 기존처럼 자동으로 누끼를 시도한다.
+// 이미지별 최선 노력이라 실패하면 그냥 원본 이미지 경로를 그대로 둔다(전체를 막지 않음).
+async function applyCutouts(imagePaths, workDir, job) {
   const targets = imagePaths.slice(0, 3);
+  const selections = job?.imageSelections || [];
+  const options = job?.cutoutOptions || [];
   try {
     const bg = await ensureGradientBackground();
     const results = await Promise.all(
       targets.map(async (imgPath, i) => {
+        if (selections[i] === 'original') return null;
+        const cached = options[i]?.cutout;
+        if (cached && (await fileExists(cached))) return cached;
+        if (selections[i] === 'cutout') return null; // 캐시가 없어졌으면 원본 유지(다시 계산하지 않음)
         const outPath = path.join(workDir, `cutout_${i}.jpg`);
         return cutoutOnBackground(imgPath, outPath, bg).catch(() => null);
       })
@@ -132,7 +177,7 @@ async function runRender(jobId) {
       const imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
         onEach: (done, total) => watchdog.report(total ? Math.round((done / total) * 10) : 0),
       });
-      await applyCutouts(imagePaths, path.join(workDir, 'images'));
+      await applyCutouts(imagePaths, path.join(workDir, 'images'), job);
 
       await fs.mkdir(config.outputDir, { recursive: true });
       const outputPath = path.join(config.outputDir, `${jobId}.mp4`);
@@ -170,7 +215,9 @@ async function runRender(jobId) {
   }
 }
 
-export function startJob(jobId, purposeId) {
+// imageSelections: 목적 선택 화면에서 사용자가 고른 이미지별 'original'|'cutout' 배열.
+// 넘기지 않으면(또는 형식이 안 맞으면) 분석 단계에서 정한 기본값을 그대로 사용한다.
+export function startJob(jobId, purposeId, imageSelections) {
   const job = getJob(jobId);
   if (!job) return { ok: false, error: '작업을 찾을 수 없어요.' };
   if (!PURPOSES[purposeId]) return { ok: false, error: '알 수 없는 목적이에요.' };
@@ -180,7 +227,11 @@ export function startJob(jobId, purposeId) {
   if (job.status !== 'awaiting_purpose') {
     return { ok: false, error: '지금은 영상 제작을 시작할 수 없는 상태예요.' };
   }
-  const updated = updateJob(jobId, { purpose: purposeId, status: 'queued', stage: 'queued' });
+  const patch = { purpose: purposeId, status: 'queued', stage: 'queued' };
+  if (Array.isArray(imageSelections)) {
+    patch.imageSelections = imageSelections.map((s) => (s === 'original' ? 'original' : 'cutout'));
+  }
+  const updated = updateJob(jobId, patch);
   enqueueRender(jobId);
   return { ok: true, job: updated };
 }

@@ -447,6 +447,65 @@ body {
   font-size: 0.85rem;
 }
 
+.cutout-picker {
+  margin-bottom: 4px;
+}
+
+.cutout-picker-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 0 0 8px 2px;
+}
+
+.cutout-picker-grid {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.cutout-pair {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cutout-thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  padding: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.cutout-thumb img {
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--mint-soft);
+}
+
+.cutout-thumb span {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.cutout-thumb.selected {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.cutout-thumb.selected span {
+  color: #2563eb;
+}
+
 .purpose-grid {
   display: grid;
   grid-template-columns: 1fr;

@@ -103,6 +103,9 @@ export function toPublicJob(job) {
         }
       : null,
     scenes: job.scenes || null,
+    // 실제 파일 경로는 노출하지 않고, 누끼 결과 존재 여부만 알려준다.
+    cutoutOptions: (job.cutoutOptions || []).map((o) => ({ index: o.index, hasCutout: !!o.cutout })),
+    imageSelections: job.imageSelections || [],
     error: job.error,
     attempts: job.attempts,
     createdAt: job.createdAt,
