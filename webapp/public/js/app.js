@@ -93,7 +93,6 @@
   const progressStageLabel = document.getElementById('progress-stage-label');
   const previewPanel = document.getElementById('render-preview');
   const previewImg = document.getElementById('render-preview-img');
-  const previewCaption = document.getElementById('render-preview-caption');
   const resultVideo = document.getElementById('result-video');
   const downloadBtn = document.getElementById('download-btn');
   const remakeBtn = document.getElementById('remake-btn');
@@ -216,33 +215,34 @@
   // ffmpeg 진행률(job.progress, 0~100)이 아직 도착하기 전이나 값이 멈춰있을 때를 대비해
   // 아주 천천히 올라가는 것처럼 보이게 하는 최소한의 보조 장치. 실제 값이 오면 바로 대체된다.
   function startFakeRenderProgress() {
-    stopFakeProgress();
+    if (renderProgressTimer) return;
     let value = STAGE_PROGRESS.scripting;
+    const render = () => {
+      progressFill.style.width = `${value}%`;
+      progressStageLabel.textContent = `${STAGE_LABELS.scripting} (예상 ${value}%)`;
+    };
+    render();
     renderProgressTimer = setInterval(() => {
       value = Math.min(value + 1, 15);
-      progressFill.style.width = `${value}%`;
-    }, 1500);
+      render();
+    }, 1000);
   }
 
-  // 실제 렌더링 프레임은 아니지만, 실제 상품 이미지와 실제 대본 문구를 그대로 순환시켜
-  // "만들어지고 있다"는 것을 눈으로 확인할 수 있게 한다.
+  // 제작 중에는 상세페이지 상품 이미지만 빠르게 순환한다.
   function startPreviewCycle(job) {
     if (previewTimer) return;
-    const images = job.product?.images || [];
-    const scenes = job.scenes || [];
-    if (!images.length && !scenes.length) return;
+    const images = [...new Set(job.product?.images || [])];
+    if (!images.length) return;
     previewPanel.hidden = false;
     previewIndex = 0;
     const render = () => {
-      const scene = scenes.length ? scenes[previewIndex % scenes.length] : null;
       const img = images.length ? images[previewIndex % images.length] : null;
       previewImg.style.visibility = img ? 'visible' : 'hidden';
       if (img) previewImg.src = img;
-      previewCaption.textContent = scene?.headline || '';
       previewIndex += 1;
     };
     render();
-    previewTimer = setInterval(render, 1400);
+    previewTimer = setInterval(render, 1500);
   }
 
   function stopPreviewCycle() {
@@ -270,15 +270,14 @@
       case 'scripting':
       case 'rendering': {
         showView('progress');
+        startPreviewCycle(job);
         if (job.status === 'rendering' && typeof job.progress === 'number') {
           stopFakeProgress();
-          progressFill.style.width = `${Math.max(1, job.progress)}%`;
-          progressStageLabel.textContent = `${renderingPhaseLabel(job.progress)} (${job.progress}%)`;
-          startPreviewCycle(job);
+          const value = Math.max(1, job.progress, parseFloat(progressFill.style.width) || 0);
+          progressFill.style.width = `${value}%`;
+          progressStageLabel.textContent = `${renderingPhaseLabel(value)} (${value}%)`;
         } else {
-          progressStageLabel.textContent = STAGE_LABELS[job.status];
-          progressFill.style.width = `${STAGE_PROGRESS[job.status]}%`;
-          if (job.status === 'rendering' && !renderProgressTimer) startFakeRenderProgress();
+          startFakeRenderProgress();
         }
         break;
       }
