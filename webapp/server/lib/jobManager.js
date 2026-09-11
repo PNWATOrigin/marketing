@@ -91,20 +91,8 @@ async function runAnalyze(jobId) {
 // 계속 살아 움직이도록 하는 감시 타이머. 진짜 값이 오면 그 값을 우선하고,
 // 1.5초 넘게 새 값이 없으면 스스로 조금씩 올려서 "멈춘 것처럼" 보이지 않게 한다.
 function startProgressWatchdog(jobId) {
-  let last = 0;
-  let lastAt = Date.now();
-  const report = (value) => {
-    last = Math.max(last, value);
-    lastAt = Date.now();
-    setJobProgress(jobId, last);
-  };
-  const timer = setInterval(() => {
-    if (Date.now() - lastAt > 1000 && last < 95) {
-      last += 1;
-      setJobProgress(jobId, last);
-    }
-  }, 1000);
-  return { report, stop: () => clearInterval(timer) };
+  let last=0;
+  return {report(value){last=Math.max(last,Math.min(99,value));setJobProgress(jobId,last);},stop(){}};
 }
 
 async function fileExists(filePath) {
@@ -156,7 +144,7 @@ async function runRender(jobId) {
   if (!job) return;
 
   for (;;) {
-    updateJob(jobId, { status: 'scripting', stage: 'scripting', error: null, progress: null });
+    updateJob(jobId, { status: 'scripting', stage: 'scripting', error: null, progress: 1 });
     const workDir = path.join(config.workDir, jobId);
     const watchdog = startProgressWatchdog(jobId);
     try {
@@ -165,15 +153,22 @@ async function runRender(jobId) {
         {start:s.start,end:s.start+1.4,text:s.headline},
         {start:s.start+1.4,end:s.end,text:s.sub||s.headline},
       ])};
-      updateJob(jobId,{stage:'matching'});
+      updateJob(jobId,{status:'rendering',stage:'downloading'});
+      watchdog.report(5);
       // 이미지 다운로드(0~10%)와 ffmpeg 인코딩(10~100%)을 하나의 진행률로 이어붙인다.
-      const imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
-        onEach: (done, total) => watchdog.report(total ? Math.round((done / total) * 10) : 0),
+      let imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
+        onEach: (done, total) => watchdog.report(total ? 5+Math.round((done / total) * 15) : 0),
       });
-      updateJob(jobId,{previewPaths:imagePaths});
+      if(imagePaths.length>12)imagePaths=Array.from({length:12},(_,i)=>imagePaths[Math.round(i*(imagePaths.length-1)/11)]);
+      if(!imagePaths.length)throw new Error('사용할 수 있는 상품 사진을 찾지 못했어요.');
+      updateJob(jobId,{previewPaths:imagePaths,stage:'cutout'});
+      watchdog.report(20);
       if(!job.product.detailOnly)await applyCutouts(imagePaths, path.join(workDir, 'images'), job);
-      const assets=await describeAssets(imagePaths,job.product);
+      updateJob(jobId,{stage:'matching'});
+      const assets=await describeAssets(imagePaths,job.product,(done,total)=>watchdog.report(25+Math.round(done/total*30)));
+      updateJob(jobId,{stage:'stickers'});
       if(job.product.detailOnly)await addDetailStickers(assets,path.join(workDir,'images'));
+      watchdog.report(60);
       const storyboard=makeStoryboard({narration:timing,assets,category:job.category,purpose:job.purpose,product:job.product});
       storyboard.audioMode='bgm-only';
       updateJob(jobId,{status:'rendering',stage:'rendering',storyboard,scenes:storyboard.shots.map(s=>({headline:s.headline,start:s.start,end:s.end})),warnings:storyboard.warnings});
@@ -187,7 +182,7 @@ async function runRender(jobId) {
         imagePaths,
         outputPath,
         purpose: job.purpose,
-        onProgress: (fraction) => watchdog.report(Math.round(10 + fraction * 90)),
+        onProgress: (fraction) => watchdog.report(Math.round(60 + fraction * 39)),
       });
       const { size } = await fs.stat(outputPath);
 
@@ -203,7 +198,7 @@ async function runRender(jobId) {
     } catch (err) {
       const attempts = (job.attempts || 0) + 1;
       updateJob(jobId, { attempts });
-      if (attempts < config.maxRenderAttempts) {
+      if (attempts < config.maxRenderAttempts && !/문구가 부족|사진을 찾지|사진이 부족/.test(err.message||'')) {
         updateJob(jobId, { error: friendlyError(err) });
         continue;
       }

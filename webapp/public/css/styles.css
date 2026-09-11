@@ -787,3 +787,6 @@ body {
 .source-hit:focus-visible { outline:3px solid #9333ea; outline-offset:-4px; }
 .source-sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 @media (orientation:landscape) { .source-art-dialog { width:min(850px,96vw,165vh); } }
+
+.progress-track { direction:ltr; text-align:left; }
+.progress-fill { animation:none; background-size:100% 100%; margin-left:0; margin-right:auto; transition:width .4s linear; }

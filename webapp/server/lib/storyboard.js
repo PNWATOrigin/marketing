@@ -8,7 +8,7 @@ export const ASSET_TYPES = ['PRODUCT_HERO','DETAIL','CLOSEUP','LIFESTYLE','USAGE
 const tokens = text => [...new Set(String(text).toLowerCase().match(/[가-힣a-z0-9]{2,}/g) || [])];
 const rules = [['BEFORE_AFTER',/before|after|전후|사용 전|사용 후/i],['USAGE',/사용법|작동|설치|섭취 방법|청소 방법/],['INFOGRAPHIC',/성분|함량|스펙|사양|영양정보/],['CLOSEUP',/디테일|확대|질감/],['LIFESTYLE',/생활|일상|주방|침실/],['FEATURE',/기능|특징/],['REVIEW',/구매평|리뷰/]];
 
-export async function describeAssets(paths, product) {
+export async function describeAssets(paths, product, onProgress=()=>{}) {
   const assets = [];
   // Bounded batches keep OCR and decoders within a small Render instance's memory.
   for (let i=0;i<paths.length;i++) {
@@ -20,6 +20,7 @@ export async function describeAssets(paths, product) {
       const type = text.length > 350 ? 'TEXT_IMAGE' : rules.find(([,r])=>r.test(text))?.[0] || 'DETAIL';
       return { width:s.width, height:s.height, text, type, animated: Number(s.nb_frames)>1 || Number(data.format?.duration)>0.1 };
     });
+    onProgress(i+1,paths.length);
     if (!info.width || !info.height || info.width<300 || info.height<300) continue;
     const sourceIndex=Number(file.match(/img_(\d+)/)?.[1]);
     const alt=product.imageContext?.[product.images?.[sourceIndex]]||'';

@@ -31,7 +31,7 @@ function isKoreanMallUrl(rawUrl) {
     return false;
   }
   if (KOREAN_MALL_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) return true;
-  return host.endsWith('.kr'); // 국내 쇼핑몰 자사몰 도메인은 대부분 .kr을 쓰므로 마지막 안전망으로 허용
+  return host.endsWith('.kr') || host.endsWith('.com'); // 국내 쇼핑몰 자사몰 도메인은 대부분 .kr을 쓰므로 마지막 안전망으로 허용
 }
 
 function getClientId(req) {
