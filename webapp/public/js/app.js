@@ -231,7 +231,8 @@
     let value = STAGE_PROGRESS.scripting;
     const render = () => {
       progressFill.style.width = `${value}%`;
-      progressStageLabel.textContent = `${STAGE_LABELS.scripting} (예상 ${value}%)`;
+      progressStageLabel.textContent = `${STAGE_LABELS.scripting} (${value}%)`;
+      progressStageLabel.title = "대본 작성 단계의 예상 진행률입니다.";
     };
     render();
     renderProgressTimer = setInterval(() => {
