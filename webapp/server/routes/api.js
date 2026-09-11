@@ -47,6 +47,13 @@ function asyncHandler(fn) {
 router.get('/purposes', (req, res) => {
   res.json({ purposes: Object.values(PURPOSES), version:'auto-images-v3', narrationRequired:false, audioMode:'bgm-only' });
 });
+router.get('/jobs/:id/sources',asyncHandler(async(req,res)=>{
+  const job=getJob(req.params.id);
+  if(!job||job.clientId!==getClientId(req))return res.status(403).json({error:'이 작업에 접근할 수 없어요.'});
+  const file=job.outputPath?.replace(/\.mp4$/,'.sources.zip');
+  if(job.status!=='completed'||!file||!fssync.existsSync(file)||job.expiresAt<Date.now())return res.status(404).json({error:'편집 소스가 없거나 만료됐어요. 새로 제작해주세요.'});
+  res.download(file,'editing-sources.zip');
+}));
 
 router.get('/jobs/:id/storyboard',asyncHandler(async(req,res)=>{
   const job=getJob(req.params.id);

@@ -18,7 +18,7 @@ const escapePath=value=>String(value).replace(/\\/g,'/').replace(/:/g,'\\:').rep
 function size(text){const longest=Math.max(1,...String(text).split('\n').map(l=>[...l].length));return Math.min(Math.round(48*SCALE),Math.floor(TEXT_WIDTH_BUDGET/longest));}
 function caption(text,file,font,y,duration,decoration=false){
  const source=file?`textfile='${escapePath(file)}'`:`text='${String(text).replace(/[\\':;\[\],]/g,' ')}'`;
- return `drawtext=fontfile='${escapePath(font)}':${source}:expansion=none:fontsize=${decoration?DECOR_FONT_SIZE:size(text)}:line_spacing=${Math.round(8*SCALE)}:fontcolor=0xFFF1FA:borderw=${BORDER_W}:bordercolor=0xF369B1:shadowcolor=0xEE68B0@0.6:shadowx=2:shadowy=3:x=(w-text_w)/2:y='${y}-10*exp(-12*t)*cos(18*t)':alpha='min(1,t/0.10)*min(1,(${duration}-t)/0.10)'`;
+ return `drawtext=fontfile='${escapePath(font)}':${source}:expansion=none:fontsize=${decoration?DECOR_FONT_SIZE:size(text)}:line_spacing=${Math.round(8*SCALE)}:fontcolor=0xFFF1FA:borderw=${BORDER_W}:bordercolor=0xF369B1:shadowcolor=0xEE68B0@0.6:shadowx=2:shadowy=3:x=(w-text_w)/2:y=${y}:alpha='min(1,t/0.10)*min(1,(${duration}-t)/0.10)'`;
 }
 export function buildRenderPlan({scenes,sceneImagePaths,fonts}){
  if(scenes.length!==sceneImagePaths.length)throw new Error('장면 수와 이미지 수가 다릅니다.');
@@ -45,9 +45,7 @@ export function buildNarrationPlan({scenes,fonts,style}) {
  const filters=scenes.map((s,i)=>{
    const frames=Math.round(s.end*FPS)-Math.round(s.start*FPS);
    const base=`[${i}:v]${s.animated?`trim=duration=${s.duration},setpts=PTS-STARTPTS,fps=${FPS},`:'trim=end_frame=1,'}scale=960:1450:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=0xF5F5F3,setsar=1`;
-   const z=s.motion==='push'?`1+0.035*on/${Math.max(1,frames-1)}`:s.motion==='pull'?`1.035-0.035*on/${Math.max(1,frames-1)}`:'1';
-   const x=s.motion==='pan'?`(iw-iw/zoom)/2+12*sin(on/${frames}*PI)`:'(iw-iw/zoom)/2';
-   const movement=s.animated?`,tpad=stop_mode=clone:stop_duration=${s.duration},trim=end_frame=${frames}`:` ,zoompan=z='${z}':x='${x}':y='(ih-ih/zoom)/2':d=${frames}:s=1080x1920:fps=30`;
+   const movement=s.animated?`,tpad=stop_mode=clone:stop_duration=${s.duration},trim=end_frame=${frames}`:`,loop=loop=${frames-1}:size=1:start=0,fps=${FPS},trim=end_frame=${frames}`;
    const captions=(s.captionFiles||[]).map(c=>`drawtext=fontfile='${escapePath(fonts.bold)}':textfile='${escapePath(c.path)}':expansion=none:fontsize=48:fontcolor=${style.captionBox?'0x151515':'white'}:borderw=${style.captionBox?0:3}:bordercolor=black:box=${style.captionBox?1:0}:boxcolor=white@0.94:boxborderw=16:line_spacing=12:x=(w-text_w)/2:y=${style.captionY}:enable='gte(t,${c.start})*lt(t,${c.end})'`);
    return base+movement+(captions.length?','+captions.join(','):'')+`,format=yuv420p,setpts=PTS-STARTPTS[v${i}]`;
  });

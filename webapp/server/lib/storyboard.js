@@ -66,7 +66,7 @@ export function makeStoryboard({ narration, assets, category, purpose, product }
     const closing=i===boundaries.length-2;
     const best=choose(text,usable,used,previous,style,closing);
     used.set(best.asset.id,(used.get(best.asset.id)||0)+1);previous=best.asset.id;
-    return { id:i,start,end,duration:end-start,headline:text,sub:'',cues,assetId:best.asset.id,imagePath:best.asset.path,assetType:best.asset.type,animated:best.asset.animated,semanticScore:best.semantic,matchMethod:best.semantic?'ocr-keyword':'product-fallback',motion:closing?'hold':style.motion[i%style.motion.length],role:start<3?'hook':closing?'closing':'body',transition:'cut' };
+    return { id:i,start,end,duration:end-start,headline:text,sub:'',cues,assetId:best.asset.id,imagePath:best.asset.path,assetType:best.asset.type,animated:best.asset.animated,semanticScore:best.semantic,matchMethod:best.semantic?'ocr-keyword':'product-fallback',motion:'hold',role:start<3?'hook':closing?'closing':'body',transition:'cut' };
   });
   const board={version:1,category,purpose,productName:product.name,duration,style,shots,warnings:[]};
   board.qa=assessStoryboard(board);

@@ -117,6 +117,7 @@ export function toPublicJob(job) {
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
     downloadReady: job.status === 'completed' && !!job.outputPath && (!job.expiresAt || job.expiresAt > Date.now()),
+    sourcesReady:job.status==='completed'&&!!job.outputPath&&fssync.existsSync(job.outputPath.replace(/\.mp4$/,'.sources.zip'))&&(!job.expiresAt||job.expiresAt>Date.now()),
     expiresAt: job.expiresAt,
   };
 }
@@ -156,6 +157,7 @@ export async function cleanupExpiredJobs() {
     if (!expired && !stale) continue;
 
     if (job.outputPath && fssync.existsSync(job.outputPath)) {
+      await fs.rm(job.outputPath.replace(/\.mp4$/,'.sources.zip'),{force:true}).catch(()=>{});
       await fs.rm(job.outputPath, { force: true }).catch(() => {});
     }
     const workDir = path.join(config.workDir, job.id);

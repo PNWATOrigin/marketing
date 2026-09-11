@@ -4,6 +4,7 @@ import { config } from '../../config.js';
 import { resolveFonts } from './fonts.js';
 import { buildRenderPlan, buildNarrationPlan, RENDER_CONSTANTS } from './filterGraph.js';
 import { runFfmpeg, runFfprobe, FfmpegError } from './ffmpegRunner.js';
+import { boingTrack, exportSources } from './editSources.js';
 
 // 글자 수로만 잘라 줄바꿈하면 단어 중간이 끊겨 읽기 불편하므로, 띄어쓰기(어절) 단위로
 // 줄바꿈한다. 내용이 잘리지 않도록 줄 수는 제한하지 않는다(자막 영역이 좁아 보통
@@ -93,7 +94,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
         const lines=wrapCaption(text,18).split('\n');
         const file=path.join(textDir,`${i}-cue-${captionFiles.length}.txt`);
         await fs.writeFile(file,lines.join('\n'),'utf8');
-        captionFiles.push({path:file,start:Math.max(0,group[0].start-scene.start),end:Math.min(scene.duration,group.at(-1).end-scene.start)});
+        captionFiles.push({path:file,text:lines.join('\n'),start:Math.max(0,group[0].start-scene.start),end:Math.min(scene.duration,group.at(-1).end-scene.start)});
         group=[];
       };
       for(const c of scene.cues){if(group.length&&(group.map(w=>w.text).join(' ').length+c.text.length>32||c.start-group[0].start>1.3))await flush();group.push(c);}
@@ -102,6 +103,11 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     return { ...scene, textFiles, captionFiles };
   }));
   const plan = style ? buildNarrationPlan({scenes:prepared,fonts,style}) : buildRenderPlan({ scenes: prepared, sceneImagePaths, fonts });
+  const cues=prepared.flatMap(s=>style?s.captionFiles.map(c=>({start:s.start+c.start,end:s.start+c.end,text:c.text})):[{start:s.start,end:s.end,text:[s.headline,s.sub].filter(Boolean).join('\n')}]).filter(c=>c.text);
+  const effects=path.join(textDir,'boing.wav');
+  await fs.writeFile(effects,boingTrack(plan.totalDuration,cues.map(c=>c.start)));
+  const audioIndex=scenes.length;
+  const audioFilter=`;[${audioIndex}:a]volume=0.35,afade=t=in:d=0.2,afade=t=out:st=${Math.max(0,plan.totalDuration-0.4)}:d=0.4[bgm];[bgm][${audioIndex+1}:a]amix=inputs=2:duration=longest:normalize=0,alimiter=limit=0.95:level=0[aout]`;
 
   const args = [
     '-y',
@@ -110,18 +116,18 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     'error',
     ...plan.inputArgs,
     '-stream_loop','-1','-i',pickBgm(purpose),
+    '-i',effects,
     '-filter_complex_threads', '1',
     '-filter_complex',
-    plan.filterComplex,
+    plan.filterComplex+audioFilter,
     '-map',
     plan.outputLabel,
     '-r',
     String(plan.fps),
     '-t',
     (Math.ceil(plan.totalDuration*30)/30).toFixed(4),
-    '-map', `${sceneImagePaths.length}:a`,
+    '-map', '[aout]',
     // 배경음악이 영상 길이에 맞춰 자연스럽게 끝나도록 페이드아웃하고, 자막이 잘 들리도록 볼륨을 낮춘다.
-    '-af', `volume=0.35,afade=t=in:d=0.2,afade=t=out:st=${Math.max(0, plan.totalDuration - 0.4).toFixed(2)}:d=0.4`,
     '-c:a', 'aac', '-b:a', '128k',
     '-c:v',
     'libx264',
@@ -140,6 +146,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
   // onProgress(fraction)로 0~1 사이 실제 ffmpeg 진행률을 그대로 전달한다.
   try {
     await runFfmpeg(args, { timeoutMs: config.renderTimeoutMs, totalSeconds: plan.totalDuration, onProgress });
+    await exportSources({outputPath,scenes:prepared.map((s,i)=>({...s,imagePath:style?s.imagePath:sceneImagePaths[i]})),cues,bgm:pickBgm(purpose),effects});
   } finally {
     await fs.rm(textDir, { recursive: true, force: true });
   }
