@@ -1,61 +1,67 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { config } from '../config.js';
 import { runFfprobe } from './render/ffmpegRunner.js';
-import { cached, digest } from './cache.js';
+import { digest } from './cache.js';
 
-export function validateTranscript(input, duration) {
-  const list = input?.words || input?.segments || input;
-  if (!Array.isArray(list) || !list.length || list.length > 500) throw new Error('시간 정보가 있는 자막이 필요해요.');
-  let previousEnd = 0;
-  return list.map(item => {
-    const start = Number(item.start), end = Number(item.end);
-    const text = String(item.word ?? item.text ?? '').replace(/\s+/g, ' ').trim();
-    if (!text || text.length > 160 || !Number.isFinite(start) || !Number.isFinite(end) || start < previousEnd - 0.04 || end <= start || end > duration + 0.05) throw new Error('자막 시간은 순서대로, 음성 길이 안에 있어야 해요.');
-    previousEnd = end;
-    return { start: Math.max(0, start), end: Math.min(duration, end), text };
-  });
+const SCRIPT_PATH = fileURLToPath(new URL('./narrationTts.py', import.meta.url));
+
+// script.js가 만든 장면(headline/sub)을 이어붙여, 화면 자막과 실제 들리는 말이 같도록
+// 나레이션 대본으로 그대로 쓴다.
+function scriptToText(script) {
+  return script.scenes.map((s) => [s.headline, s.sub].filter(Boolean).join('. ')).join(' ').trim();
 }
 
-export function parseTimedText(text) {
-  try { return JSON.parse(text); } catch {}
-  const time = value => { const [h,m,s] = value.replace(',', '.').split(':').map(Number); return h*3600+m*60+s; };
-  const cues = [...text.replace(/\r/g,'').matchAll(/(\d{2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})[^\n]*\n([\s\S]*?)(?=\n\s*\n|$)/g)];
-  return cues.map(m => ({ start: time(m[1]), end: time(m[2]), text: m[3].replace(/<[^>]*>/g,'') }));
-}
-
-export async function registerNarration(job, bytes, contentType) {
-  const formats = { 'audio/mpeg': ['mp3','.mp3'], 'audio/mp3':['mp3','.mp3'], 'audio/wav':['wav','.wav'], 'audio/x-wav':['wav','.wav'], 'audio/mp4':['mov','.m4a'], 'audio/x-m4a':['mov','.m4a'] };
-  const format = formats[contentType];
-  if (!format || !Buffer.isBuffer(bytes) || bytes.length < 100 || bytes.length > 20*1024*1024) throw new Error('20MB 이하의 MP3, WAV, M4A 음성을 선택해주세요.');
+// 무료 TTS(edge-tts, 비공식 Microsoft Edge 음성 API)로 나레이션 음성과 단어별 타이밍을
+// 만든다. storyboard.js가 이 타이밍(words)으로 장면을 자동 구성하므로, 실패하면 영상
+// 제작 자체가 불가능하다는 뜻에서 예외를 그대로 던진다(다른 부가 기능과 달리 최선
+// 노력으로 건너뛸 수 없는 핵심 기능이다).
+export async function synthesizeNarration(job, script, voice = config.narrationVoice) {
+  const text = scriptToText(script);
+  if (!text) throw new Error('나레이션으로 읽을 문구를 만들지 못했어요.');
   const dir = path.join(config.dataDir, 'narrations', job.id);
   await fs.mkdir(dir, { recursive: true });
-  const file = path.join(dir, digest(bytes) + format[1]);
-  await fs.writeFile(file, bytes);
-  try {
-    const probe = JSON.parse(await runFfprobe(['-v','error','-protocol_whitelist','file,pipe','-f',format[0],'-show_entries','format=duration:stream=codec_type,duration','-of','json',file]));
-    const stream = probe.streams?.find(s => s.codec_type === 'audio');
-    const duration = Number(stream?.duration || probe.format?.duration);
-    if (!stream || !Number.isFinite(duration) || duration < 13 || duration > 17) throw new Error('원본을 자르지 않도록 13~17초 나레이션을 선택해주세요.');
-    return { path: file, duration, hash: digest(bytes), words: null, format: format[0] };
-  } catch (error) { await fs.rm(file, { force: true }); throw error; }
-}
+  const file = path.join(dir, 'tts.mp3');
 
-export async function transcribeNarration(job) {
-  const narration = job.narration;
-  if (!narration) throw new Error('기존 나레이션 음성을 먼저 등록해주세요.');
-  if (narration.words?.length) return narration;
-  if (!process.env.OPENAI_API_KEY) throw new Error('자동 음성 인식 연결이 필요해요. 지금은 음성과 시간 자막(SRT/JSON)을 함께 등록할 수 있어요.');
-  const words = await cached('transcripts-v1', `${job.clientId}:${narration.hash}`, async () => {
-    const form = new FormData();
-    form.append('file', new Blob([await fs.readFile(narration.path)]), path.basename(narration.path));
-    form.append('model', 'whisper-1');
-    form.append('language', 'ko');
-    form.append('response_format', 'verbose_json');
-    form.append('timestamp_granularities[]', 'word');
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', { method:'POST', headers:{Authorization:`Bearer ${process.env.OPENAI_API_KEY}`}, body:form, signal:AbortSignal.timeout(60000) });
-    if (!response.ok) throw new Error(`음성 인식 연결을 확인해주세요. (${response.status})`);
-    return validateTranscript(await response.json(), narration.duration);
+  const words = await new Promise((resolve, reject) => {
+    const proc = spawn(process.env.PYTHON_PATH || 'python3', [SCRIPT_PATH, voice, file], { windowsHide: true });
+    let stdout = '';
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      proc.kill('SIGKILL');
+      reject(new Error('나레이션 음성 생성 시간이 초과됐어요.'));
+    }, config.ttsTimeoutMs);
+    proc.stdout.on('data', (d) => { stdout += d; });
+    proc.on('error', (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(err);
+    });
+    proc.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (code !== 0) return reject(new Error('나레이션 음성 생성에 실패했어요.'));
+      try {
+        resolve(JSON.parse(stdout).words);
+      } catch {
+        reject(new Error('나레이션 타이밍 분석에 실패했어요.'));
+      }
+    });
+    proc.stdin.on('error', () => {}); // 프로세스가 이미 죽었을 때 EPIPE 방지
+    proc.stdin.write(text, 'utf8');
+    proc.stdin.end();
   });
-  return { ...narration, words };
+
+  const probe = JSON.parse(
+    await runFfprobe(['-v', 'error', '-show_entries', 'format=duration', '-of', 'json', file])
+  );
+  const duration = Number(probe.format?.duration);
+  if (!Number.isFinite(duration) || !words?.length) throw new Error('나레이션 생성에 실패했어요.');
+  return { path: file, duration, hash: digest(await fs.readFile(file)), words, format: 'mp3' };
 }

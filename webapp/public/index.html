@@ -58,24 +58,9 @@
     <section id="view-purpose" class="view view-purpose" hidden>
       <button type="button" id="purpose-back-btn" class="nav-back-btn">← 이전</button>
       <div class="product-summary" id="product-summary"></div>
-      <div class="card narration-card">
-        <h2>기존 나레이션 선택</h2>
-        <p>13~17초 음성을 그대로 사용해요. MP3 · WAV · M4A, 최대 20MB</p>
-        <label for="narration-file">나레이션 파일</label>
-        <input id="narration-file" type="file" accept=".mp3,.wav,.m4a" />
-        <audio id="narration-preview" controls hidden></audio>
-        <p id="narration-status" role="status">사용할 상품 나레이션을 선택해주세요.</p>
-        <label for="transcript-file">시간 자막 (SRT 또는 JSON)</label>
-        <input id="transcript-file" type="file" accept=".srt,.json" />
-        <p id="transcription-help">자동 음성 인식 연결을 확인하고 있어요.</p>
-      </div>
-      <div class="cutout-picker" id="cutout-picker" hidden>
-        <p class="cutout-picker-title">영상에 사용할 이미지를 선택하세요</p>
-        <div class="cutout-picker-grid" id="cutout-picker-grid"></div>
-      </div>
       <h2 class="section-title"><img class="heading-purpose-img" src="/img/heading-purpose.png" alt="어떤 영상을 만들까요? - 목적만 선택하면 영상 문구와 흐름을 알아서 만들어줘요." /></h2>
       <div class="purpose-grid" id="purpose-grid"></div>
-      <p id="purpose-note" class="stage-sub">목적은 컷의 속도와 강조 방식을 바꿔요. 나레이션과 자막 내용은 원본을 유지해요.</p>
+      <p id="purpose-note" class="stage-sub">목적은 컷의 속도와 강조 방식을 바꿔요.</p>
       <button id="start-render-btn" class="btn btn-img" disabled>
         <img src="/img/btn-start-render.png" alt="영상 제작 시작" />
       </button>

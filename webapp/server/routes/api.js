@@ -6,7 +6,6 @@ import { assertSafeUrlFormat, UnsafeUrlError } from '../lib/ssrf.js';
 import { createJob, getJob, updateJob, toPublicJob, countActiveJobsForClient } from '../lib/jobStore.js';
 import { enqueueAnalyze, startJob, retryJob } from '../lib/jobManager.js';
 import { PURPOSES } from '../lib/script.js';
-import { registerNarration, parseTimedText, validateTranscript } from '../lib/narration.js';
 
 export const router = express.Router();
 
@@ -46,42 +45,15 @@ function asyncHandler(fn) {
 }
 
 router.get('/purposes', (req, res) => {
-  res.json({ purposes: Object.values(PURPOSES), version:'narration-first-v1', narrationRequired:true, automaticTranscription:!!process.env.OPENAI_API_KEY });
+  res.json({ purposes: Object.values(PURPOSES) });
 });
 
-const uploading=new Set();
+// 완성된 영상의 나레이션(자동 생성된 mp3)만 배경음악 없이 따로 받을 수 있게 한다.
 router.get('/jobs/:id/narration',asyncHandler(async(req,res)=>{
   const job=getJob(req.params.id);
   if(!job||job.clientId!==getClientId(req))return res.status(403).json({error:'이 작업에 접근할 수 없어요.'});
-  if(!job.narration?.path||!fssync.existsSync(job.narration.path))return res.status(404).json({error:'보관된 원본 음성이 없어요.'});
-  res.download(job.narration.path,'narration-original'+path.extname(job.narration.path));
-}));
-router.post('/jobs/:id/narration', (req,res,next)=>{
-  const job=getJob(req.params.id);
-  if(!job||job.clientId!==getClientId(req))return res.status(403).json({error:'이 작업에 접근할 수 없어요.'});
-  if(job.status!=='awaiting_purpose'||uploading.has(job.id))return res.status(409).json({error:'음성을 등록할 수 없는 상태예요.'});
-  uploading.add(job.id);
-  res.on('close',()=>uploading.delete(job.id));
-  next();
-}, express.raw({type:['audio/*','application/octet-stream'],limit:'20mb'}), asyncHandler(async(req,res)=>{
-  const job=getJob(req.params.id);
-  try{
-    const narration=await registerNarration(job,req.body,req.get('content-type')?.split(';')[0]);
-    if(job.status!=='awaiting_purpose')throw new Error('작업 상태가 변경됐어요.');
-    updateJob(job.id,{narration});
-    res.json({job:toPublicJob(job)});
-  }catch(err){res.status(400).json({error:err.message});}
-}));
-
-router.post('/jobs/:id/transcript',asyncHandler(async(req,res)=>{
-  const job=getJob(req.params.id);
-  if(!job||job.clientId!==getClientId(req))return res.status(403).json({error:'이 작업에 접근할 수 없어요.'});
-  if(job.status!=='awaiting_purpose'||!job.narration)return res.status(409).json({error:'음성을 먼저 등록해주세요.'});
-  try{
-    const words=validateTranscript(parseTimedText(String(req.body?.text||'')),job.narration.duration);
-    updateJob(job.id,{narration:{...job.narration,words}});
-    res.json({job:toPublicJob(job)});
-  }catch(err){res.status(400).json({error:err.message});}
+  if(!job.narration?.path||!fssync.existsSync(job.narration.path))return res.status(404).json({error:'나레이션 음성이 없어요.'});
+  res.download(job.narration.path,'narration'+path.extname(job.narration.path));
 }));
 
 router.get('/jobs/:id/storyboard',asyncHandler(async(req,res)=>{

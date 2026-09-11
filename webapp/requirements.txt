@@ -1,3 +1,4 @@
 curl_cffi==0.16.3
 rembg==2.0.84
 onnxruntime==1.29.0
+edge-tts==7.2.8
