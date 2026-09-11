@@ -258,7 +258,7 @@ export function analyzeHtml(html, pageUrl) {
       const src = $(el).attr('src');
       try { const u = new URL(src, pageUrl); u.searchParams.set('w','1000'); u.searchParams.set('h','1000'); return u.toString(); } catch { return null; }
     }) : [];
-  const images = dedupeImages(ohou ? [...gallery, ...fromOg.images] : [...fromJsonLd.images, ...fromOg.images, ...fromMeta.images], 12);
+  const images = dedupeImages(ohou ? [...gallery, ...fromOg.images,...fromMeta.images.filter(u=>/shop-phinf|detail|description/i.test(u))] : [...fromJsonLd.images, ...fromOg.images, ...fromMeta.images], 16);
 
   // JSON-LD/OG/메타로 이름·가격·이미지를 하나도 못 찾았을 때만 SPA 임베디드 상태를 확인한다.
   if (!name || price == null || images.length === 0) {
@@ -295,6 +295,7 @@ export function analyzeHtml(html, pageUrl) {
     ].filter(Boolean) : (jsonLdProduct?.additionalProperty || []).filter?.(p => p?.name && p?.value).map(p => cleanText(`${p.name}: ${p.value}`, 40)).slice(0,3) || [],
     ctaHint: bodyHints.ctaHint,
     images,
+    imageContext:Object.fromEntries($('img').toArray().map(el=>[toAbsoluteUrl(pageUrl,$(el).attr('src')||$(el).attr('data-src')),cleanText($(el).attr('alt'),100)]).filter(([u,t])=>u&&t)),
     warnings,
   };
 }

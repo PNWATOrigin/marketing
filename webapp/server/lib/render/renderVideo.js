@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { config } from '../../config.js';
 import { resolveFonts } from './fonts.js';
-import { buildRenderPlan, RENDER_CONSTANTS } from './filterGraph.js';
+import { buildRenderPlan, buildNarrationPlan, RENDER_CONSTANTS } from './filterGraph.js';
 import { runFfmpeg, runFfprobe, FfmpegError } from './ffmpegRunner.js';
 
 function pickSceneImages(scenes, imagePaths, gradientPath) {
@@ -51,7 +51,7 @@ async function verifyOutput(outputPath, expectedDuration) {
  * 이미지가 부족하면(0장 포함) 민트→화이트 그라데이션 배경으로 대체해서
  * 이미지 문제만으로 전체 렌더링이 실패하지 않게 한다.
  */
-export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, purpose }) {
+export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, purpose, narration, style }) {
   const fonts = resolveFonts();
   const gradientPath = null;
   const sceneImagePaths = pickSceneImages(scenes, imagePaths, gradientPath);
@@ -61,9 +61,24 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     const textFiles = { headline: path.join(textDir, `${i}-head.txt`), sub: path.join(textDir, `${i}-sub.txt`) };
     await fs.writeFile(textFiles.headline, String(scene.headline || ''), 'utf8');
     await fs.writeFile(textFiles.sub, String(scene.sub || ''), 'utf8');
-    return { ...scene, textFiles };
+    const captionFiles=[];
+    if(narration) {
+      let group=[];
+      const flush=async()=>{
+        if(!group.length)return;
+        const text=group.map(c=>c.text).join(' ');
+        const lines=text.match(/.{1,18}(?:\s|$)|.{1,18}/gu)||[text];
+        const file=path.join(textDir,`${i}-cue-${captionFiles.length}.txt`);
+        await fs.writeFile(file,lines.join('\n'),'utf8');
+        captionFiles.push({path:file,start:Math.max(0,group[0].start-scene.start),end:Math.min(scene.duration,group.at(-1).end-scene.start)});
+        group=[];
+      };
+      for(const c of scene.cues){if(group.length&&(group.map(w=>w.text).join(' ').length+c.text.length>32||c.start-group[0].start>1.3))await flush();group.push(c);}
+      await flush();
+    }
+    return { ...scene, textFiles, captionFiles };
   }));
-  const plan = buildRenderPlan({ scenes: prepared, sceneImagePaths, fonts });
+  const plan = narration ? buildNarrationPlan({scenes:prepared,fonts,style}) : buildRenderPlan({ scenes: prepared, sceneImagePaths, fonts });
 
   const args = [
     '-y',
@@ -71,7 +86,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     '-loglevel',
     'error',
     ...plan.inputArgs,
-    '-i', pickBgm(purpose),
+    ...(narration?['-protocol_whitelist','file,pipe','-f',narration.format,'-i',narration.path]:['-i',pickBgm(purpose)]),
     '-filter_complex_threads', '1',
     '-filter_complex',
     plan.filterComplex,
@@ -80,11 +95,11 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     '-r',
     String(plan.fps),
     '-t',
-    plan.totalDuration.toFixed(2),
+    (Math.ceil(plan.totalDuration*30)/30).toFixed(4),
     '-map', `${sceneImagePaths.length}:a`,
     // 배경음악이 영상 길이에 맞춰 자연스럽게 끝나도록 페이드아웃하고, 자막이 잘 들리도록 볼륨을 낮춘다.
-    '-af', `volume=0.55,afade=t=out:st=${Math.max(0, plan.totalDuration - 0.4).toFixed(2)}:d=0.4`,
-    '-c:a', 'aac', '-b:a', '96k',
+    ...(narration?[]:['-af', `volume=0.55,afade=t=out:st=${Math.max(0, plan.totalDuration - 0.4).toFixed(2)}:d=0.4`]),
+    '-c:a', 'aac', '-b:a', narration?'192k':'96k',
     '-c:v',
     'libx264',
     '-threads', '2',
@@ -106,5 +121,9 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     await fs.rm(textDir, { recursive: true, force: true });
   }
   const info = await verifyOutput(outputPath, plan.totalDuration);
+  if(narration){
+    const probe=JSON.parse(await runFfprobe(['-v','error','-select_streams','a:0','-show_entries','stream=duration','-of','json',outputPath]));
+    if(!probe.streams?.[0]||Math.abs(Number(probe.streams[0].duration)-narration.duration)>0.12)throw new FfmpegError('원본 음성 길이 검증에 실패했어요.');
+  }
   return { outputPath, ...info, totalDuration: plan.totalDuration };
 }
