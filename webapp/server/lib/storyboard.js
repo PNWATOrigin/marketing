@@ -21,8 +21,10 @@ export async function describeAssets(paths, product) {
       return { width:s.width, height:s.height, text, type, animated: Number(s.nb_frames)>1 || Number(data.format?.duration)>0.1 };
     });
     if (!info.width || !info.height || info.width<300 || info.height<300) continue;
-    const type = i===0 && info.type==='DETAIL' ? 'PRODUCT_HERO' : info.type;
-    assets.push({ id:hash, path:file, ...info, type, quality:Math.min(1,Math.min(info.width,info.height)/1000), visibility: type==='TEXT_IMAGE'?0.2:0.8, composition:Math.min(info.width,info.height)/Math.max(info.width,info.height), tags:tokens(info.text), provenance:'page-image+local-ocr', productName:product.name });
+    const sourceIndex=Number(file.match(/img_(\d+)/)?.[1]);
+    const alt=product.imageContext?.[product.images?.[sourceIndex]]||'';
+    const type = i===0 && info.type==='DETAIL' ? 'PRODUCT_HERO' : rules.find(([,r])=>r.test(alt))?.[0]||info.type;
+    assets.push({ id:hash, path:file, ...info, type, quality:Math.min(1,Math.min(info.width,info.height)/1000), visibility: type==='TEXT_IMAGE'?0.2:0.8, composition:Math.min(info.width,info.height)/Math.max(info.width,info.height), tags:tokens(info.text+' '+alt), provenance:'page-image+alt+local-ocr', productName:product.name });
   }
   return assets;
 }

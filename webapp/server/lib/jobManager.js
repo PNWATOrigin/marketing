@@ -102,7 +102,9 @@ async function runAnalyze(jobId) {
   try {
     const product = await cached('products-v2',job.url,async()=>{
       const {html,finalUrl}=await fetchProductPage(job.url);
-      return analyzeHtml(html,finalUrl);
+      const product=analyzeHtml(html,finalUrl);
+      await enrichWithImageText(product,path.join(config.workDir,jobId,'ocr'));
+      return product;
     },3600000);
     const cutoutOptions = await prepareCutoutPreviews(product, jobId);
     const imageSelections = cutoutOptions.map((o) => (o.cutout ? 'cutout' : 'original'));
@@ -155,10 +157,12 @@ async function applyCutouts(imagePaths, workDir, job) {
     const bg = await ensureGradientBackground();
     const results = await Promise.all(
       targets.map(async (imgPath, i) => {
-        if (selections[i] === 'original') return null;
-        const cached = options[i]?.cutout;
+        const option=options.find(o=>path.basename(o.original)===path.basename(imgPath));
+        const choice=option?selections[option.index]:null;
+        if (choice === 'original') return null;
+        const cached = option?.cutout;
         if (cached && (await fileExists(cached))) return cached;
-        if (selections[i] === 'cutout') return null; // 캐시가 없어졌으면 원본 유지(다시 계산하지 않음)
+        if (choice === 'cutout') return null;
         const outPath = path.join(workDir, `cutout_${i}.jpg`);
         return cutoutOnBackground(imgPath, outPath, bg).catch(() => null);
       })

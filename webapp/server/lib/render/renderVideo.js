@@ -40,7 +40,7 @@ async function verifyOutput(outputPath, expectedDuration) {
     throw new FfmpegError(`영상 코덱이 올바르지 않아요. (${codec})`);
   }
   const duration = parseFloat(stream.duration);
-  if (Number.isFinite(duration) && Math.abs(duration - expectedDuration) > 1.0) {
+  if (!Number.isFinite(duration) || Math.abs(duration - expectedDuration) > 0.12) {
     throw new FfmpegError(`영상 길이가 예상과 달라요. (${duration}s)`);
   }
   return { width, height, duration, codec };
