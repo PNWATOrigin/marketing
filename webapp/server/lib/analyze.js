@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { filterBannedClaims } from './claimsGuard.js';
 
 // 상품 사진이 아니라 아이콘/버튼/배너처럼 화면 UI에 쓰이는 이미지를 걸러낸다.
 const SKIP_IMAGE_PATTERN = /(icon|sprite|logo|blank|pixel|spinner|loading|placeholder|favicon|btn|button|arrow|badge|banner|share|sns|kakao|naver_|instagram|facebook|payment|review_?star|cart|wish|close|top_?btn|scroll|nav_|header_|footer_|gnb|lnb|\.svg(\?|$))/i;
@@ -274,10 +275,19 @@ export function analyzeHtml(html, pageUrl) {
   if (!name || !images.length) throw new Error('상품명과 이미지를 확인하지 못했어요. 공개 상품 상세페이지 URL인지 확인해주세요.');
   const currency = fromJsonLd.currency || fromOg.currency || (price != null ? 'KRW' : null);
 
+  const rawFeatures = ohou ? [
+    /BLDC/i.test(name || '') ? 'BLDC 무선청소기' : null,
+    /물걸레키트/.test(name || '') ? '물걸레키트 포함' : null,
+    /자동\s*먼지\s*비움/.test(name || '') ? '자동 먼지 비움' : null,
+    (name || '').match(/먼지봉투\s*\d+장/)?.[0],
+  ].filter(Boolean) : (jsonLdProduct?.additionalProperty || []).filter?.(p => p?.name && p?.value).map(p => cleanText(`${p.name}: ${p.value}`, 40)).slice(0,3) || [];
+  const { kept: features, removed: blockedClaims } = filterBannedClaims(rawFeatures);
+
   const warnings = [];
   if (!name) warnings.push('상품명을 찾지 못했어요.');
   if (price == null) warnings.push('가격 정보를 찾지 못했어요.');
   if (images.length === 0) warnings.push('사용할 수 있는 이미지를 찾지 못했어요.');
+  if (blockedClaims > 0) warnings.push('검증되지 않은 과장된 표현이 포함된 문구는 제외했어요.');
 
   return {
     sourceUrl: pageUrl,
@@ -287,12 +297,7 @@ export function analyzeHtml(html, pageUrl) {
     originalPrice: originalPrice != null && price != null && originalPrice > price ? originalPrice : null,
     currency,
     description,
-    features: ohou ? [
-      /BLDC/i.test(name || '') ? 'BLDC 무선청소기' : null,
-      /물걸레키트/.test(name || '') ? '물걸레키트 포함' : null,
-      /자동\s*먼지\s*비움/.test(name || '') ? '자동 먼지 비움' : null,
-      (name || '').match(/먼지봉투\s*\d+장/)?.[0],
-    ].filter(Boolean) : (jsonLdProduct?.additionalProperty || []).filter?.(p => p?.name && p?.value).map(p => cleanText(`${p.name}: ${p.value}`, 40)).slice(0,3) || [],
+    features,
     ctaHint: bodyHints.ctaHint,
     images,
     warnings,
