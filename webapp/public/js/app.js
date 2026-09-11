@@ -86,9 +86,6 @@
   });
   const inputError = document.getElementById('input-error');
   const productSummary = document.getElementById('product-summary');
-  const cutoutPicker = document.getElementById('cutout-picker');
-  const cutoutPickerGrid = document.getElementById('cutout-picker-grid');
-  let imageSelections = [];
   const purposeGrid = document.getElementById('purpose-grid');
   const startRenderBtn = document.getElementById('start-render-btn');
   const progressFill = document.getElementById('progress-fill');
@@ -168,37 +165,6 @@
         ${product.brand ? `<div class="ps-meta">${escapeHtml(product.brand)}</div>` : ''}
       </div>
     `;
-  }
-
-  // 원본/누끼 이미지를 나란히 보여주고, 사용자가 고른 결과를 imageSelections에 담아둔다.
-  // 렌더링을 시작할 때 이 배열을 함께 보내면 그 선택이 그대로 반영된다.
-  function renderCutoutOptions(job) {
-    const options = job.cutoutOptions || [];
-    imageSelections = job.imageSelections?.length ? [...job.imageSelections] : options.map((o) => (o.hasCutout ? 'cutout' : 'original'));
-    if (!options.length) {
-      cutoutPicker.hidden = true;
-      cutoutPickerGrid.innerHTML = '';
-      return;
-    }
-    cutoutPicker.hidden = false;
-    cutoutPickerGrid.innerHTML = options
-      .map((o) => {
-        const orig = `<button type="button" class="cutout-thumb${imageSelections[o.index] === 'original' ? ' selected' : ''}" data-index="${o.index}" data-type="original"><img src="/api/jobs/${currentJobId}/preview-image?type=original&index=${o.index}" alt="원본" /><span>원본</span></button>`;
-        const cut = o.hasCutout
-          ? `<button type="button" class="cutout-thumb${imageSelections[o.index] === 'cutout' ? ' selected' : ''}" data-index="${o.index}" data-type="cutout"><img src="/api/jobs/${currentJobId}/preview-image?type=cutout&index=${o.index}" alt="누끼" /><span>누끼</span></button>`
-          : '';
-        return `<div class="cutout-pair">${orig}${cut}</div>`;
-      })
-      .join('');
-    cutoutPickerGrid.querySelectorAll('.cutout-thumb').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const idx = Number(btn.dataset.index);
-        imageSelections[idx] = btn.dataset.type;
-        cutoutPickerGrid.querySelectorAll(`.cutout-thumb[data-index="${idx}"]`).forEach((b) => {
-          b.classList.toggle('selected', b.dataset.type === btn.dataset.type);
-        });
-      });
-    });
   }
 
   function escapeHtml(str) {
@@ -290,7 +256,6 @@
         stopFakeProgress();
         stopPreviewCycle();
         renderProductSummary(job.product);
-        renderCutoutOptions(job);
         renderPurposeCards();
         showView('purpose');
         break;
@@ -365,7 +330,6 @@
     }
     currentJobId = null;
     selectedPurpose = null;
-    imageSelections = [];
     localStorage.removeItem(STORAGE_KEYS.jobId);
     stopPolling();
     stopFakeProgress();
@@ -401,7 +365,7 @@
     try {
       const { job } = await api(`/jobs/${currentJobId}/start`, {
         method: 'POST',
-        body: JSON.stringify({ purpose: selectedPurpose, imageSelections }),
+        body: JSON.stringify({ purpose: selectedPurpose }),
       });
       applyJobState(job);
       poll(currentJobId);
