@@ -124,7 +124,7 @@ async function runRender(jobId) {
     const workDir = path.join(config.workDir, jobId);
     const watchdog = startProgressWatchdog(jobId);
     try {
-      const script = generateScript(job.product, job.purpose);
+      const script = generateScript(job.product, job.purpose, job.category);
       const scenes = script.scenes.map((s) => ({ headline: s.headline, sub: s.sub || null }));
 
       updateJob(jobId, { status: 'rendering', stage: 'rendering', progress: 0, scenes });
