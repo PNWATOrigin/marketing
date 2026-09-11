@@ -24,6 +24,7 @@ export async function describeAssets(paths, product, onProgress=()=>{}) {
     if (!info.width || !info.height || info.width<300 || info.height<300) continue;
     const sourceIndex=Number(file.match(/img_(\d+)/)?.[1]);
     const alt=product.imageContext?.[product.images?.[sourceIndex]]||'';
+    if (/19\s*금|성인\s*인증|미성년자|청소년.*이용불가|무이자|신용카드|카드\s*혜택|결제\s*안내|이모티콘|emoticon|emoji|adult.only/i.test(info.text+' '+alt)) continue;
     const type = i===0 && info.type==='DETAIL' ? 'PRODUCT_HERO' : rules.find(([,r])=>r.test(alt))?.[0]||info.type;
     assets.push({ id:hash, path:file, ...info, type, quality:Math.min(1,Math.min(info.width,info.height)/1000), visibility: type==='TEXT_IMAGE'?0.2:0.8, composition:Math.min(info.width,info.height)/Math.max(info.width,info.height), tags:tokens(info.text+' '+alt), provenance:'page-image+alt+local-ocr', productName:product.name });
   }

@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 import { filterBannedClaims } from './claimsGuard.js';
 
 // 상품 사진이 아니라 아이콘/버튼/배너처럼 화면 UI에 쓰이는 이미지를 걸러낸다.
-const SKIP_IMAGE_PATTERN = /(icon|sprite|logo|blank|pixel|spinner|loading|placeholder|favicon|btn|button|arrow|badge|banner|share|sns|kakao|naver_|instagram|facebook|payment|review_?star|cart|wish|close|top_?btn|scroll|nav_|header_|footer_|gnb|lnb|\.svg(\?|$))/i;
+const SKIP_IMAGE_PATTERN = /(icon|sprite|logo|blank|pixel|spinner|loading|placeholder|favicon|btn|button|arrow|badge|banner|share|sns|kakao|naver_|instagram|facebook|payment|credit.?card|payco|tosspay|adult|age.?19|19plus|emoticon|emoji|coupon|delivery|review_?star|cart|wish|close|top_?btn|scroll|nav_|header_|footer_|gnb|lnb|\.svg(\?|$))/i;
 // 상세페이지 안에서 실제 상품 사진/설명 이미지가 들어있을 만한 영역을 우선 찾는다
 // (Cafe24/고도몰/메이크샵 등 국내 쇼핑몰 빌더가 흔히 쓰는 클래스/아이디 이름 기준).
 const DETAIL_CONTAINER_SELECTOR =
@@ -124,9 +124,8 @@ function extractMeta($, baseUrl) {
   function collectImages($scope) {
     const found = [];
     $scope.find('img').addBack('img').each((_, el) => {
-      if (found.length >= 12) return;
-      const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-original');
-      if (!src || SKIP_IMAGE_PATTERN.test(src)) return;
+      const src = $(el).attr('ec-data-src') || $(el).attr('data-src') || $(el).attr('data-original') || $(el).attr('src');
+      if (!src || SKIP_IMAGE_PATTERN.test(src+' '+($(el).attr('alt')||'')) || $(el).closest('header,footer,nav,[class*=payment],[class*=coupon],[class*=recommend]').length) return;
       const w = parseInt($(el).attr('width') || '0', 10);
       const h = parseInt($(el).attr('height') || '0', 10);
       if ((w && w < 200) || (h && h < 200)) return;
@@ -139,8 +138,8 @@ function extractMeta($, baseUrl) {
   // 상세 설명 영역이 있으면 그 안의 이미지를 우선 쓰고(실제 상품 사진일 확률이 높음),
   // 부족하면 페이지 전체에서 아이콘/버튼류를 걸러낸 이미지로 보충한다.
   const detailImages = collectImages($(DETAIL_CONTAINER_SELECTOR));
-  const images = detailImages.length ? detailImages : collectImages($('body'));
-  return { name: title, description, images };
+  const images = detailImages; 
+  return { name: title, description, images, detailImages };
 }
 
 // 허용된 범위(공개 텍스트) 내에서 핵심 특징 후보와 구매 유도 문구를 찾는다.
@@ -270,11 +269,12 @@ export function analyzeHtml(html, pageUrl) {
       const src = $(el).attr('src');
       try { const u = new URL(src, pageUrl); u.searchParams.set('w','1000'); u.searchParams.set('h','1000'); return u.toString(); } catch { return null; }
     }) : [];
-  let images = dedupeImages(ohou ? [...gallery, ...fromOg.images,...fromMeta.images.filter(u=>/shop-phinf|detail|description/i.test(u))] : [...fromJsonLd.images, ...fromOg.images, ...fromMeta.images], 16);
+  let images = dedupeImages(ohou ? [...gallery, ...fromOg.images,...fromMeta.images.filter(u=>/shop-phinf|detail|description/i.test(u))] : (fromMeta.detailImages.length ? fromMeta.detailImages : [...fromJsonLd.images, ...fromOg.images]), 16);
 
   if (['nutridday.com','www.nutridday.com'].includes(new URL(pageUrl).hostname)) {
     images=dedupeImages($('#prdDetail .cont img').toArray().map(el=>toAbsoluteUrl(pageUrl,$(el).attr('ec-data-src')||$(el).attr('data-src')||$(el).attr('src'))).filter(u=>u&&!/banner|delivery/i.test(u)),16);
   }
+  images=images.filter(u=>!SKIP_IMAGE_PATTERN.test(u));
   const detailOnly=['nutrime.co.kr','www.nutrime.co.kr','nutridday.com','www.nutridday.com'].includes(new URL(pageUrl).hostname);
   if(['nutrime.co.kr','www.nutrime.co.kr'].includes(new URL(pageUrl).hostname)) images=dedupeImages($('#strict-product-detail img[src*="/data/editor/goods/"]').toArray().map(el=>toAbsoluteUrl(pageUrl,$(el).attr('src'))),16);
 
@@ -310,6 +310,7 @@ export function analyzeHtml(html, pageUrl) {
   return {
     sourceUrl: pageUrl,
     detailOnly,
+    preferDetail:fromMeta.detailImages.length>0 || detailOnly,
     name,
     brand,
     price,

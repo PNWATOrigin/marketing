@@ -75,7 +75,7 @@ async function runAnalyze(jobId) {
   if (!job) return;
   updateJob(jobId, { status: 'analyzing', stage: 'analyzing', error: null });
   try {
-    const product = await cached('products-detail-v4',job.url,async()=>{
+    const product = await cached('products-detail-v5',job.url,async()=>{
       const {html,finalUrl}=await fetchProductPage(job.url);
       const product=analyzeHtml(html,finalUrl);
       await enrichWithImageText(product,path.join(config.workDir,jobId,'ocr'));
@@ -157,17 +157,17 @@ async function runRender(jobId) {
       watchdog.report(5);
       // 이미지 다운로드(0~10%)와 ffmpeg 인코딩(10~100%)을 하나의 진행률로 이어붙인다.
       let imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
+        max: job.product.images.length,
         onEach: (done, total) => watchdog.report(total ? 5+Math.round((done / total) * 15) : 0),
       });
-      if(imagePaths.length>12)imagePaths=Array.from({length:12},(_,i)=>imagePaths[Math.round(i*(imagePaths.length-1)/11)]);
       if(!imagePaths.length)throw new Error('사용할 수 있는 상품 사진을 찾지 못했어요.');
       updateJob(jobId,{previewPaths:imagePaths,stage:'cutout'});
       watchdog.report(20);
       if(!job.product.detailOnly)await applyCutouts(imagePaths, path.join(workDir, 'images'), job);
       updateJob(jobId,{stage:'matching'});
       const assets=await describeAssets(imagePaths,job.product,(done,total)=>watchdog.report(25+Math.round(done/total*30)));
-      updateJob(jobId,{stage:'stickers'});
-      if(job.product.detailOnly)await addDetailStickers(assets,path.join(workDir,'images'));
+      updateJob(jobId,{stage:'stickers',previewPaths:assets.map(a=>a.path)});
+      if(job.product.detailOnly || job.product.preferDetail)await addDetailStickers(assets,path.join(workDir,'images'));
       watchdog.report(60);
       const storyboard=makeStoryboard({narration:timing,assets,category:job.category,purpose:job.purpose,product:job.product});
       storyboard.audioMode='bgm-only';

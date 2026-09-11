@@ -790,3 +790,9 @@ body {
 
 .progress-track { direction:ltr; text-align:left; }
 .progress-fill { animation:none; background-size:100% 100%; margin-left:0; margin-right:auto; transition:width .4s linear; }
+
+/* The fill tracks completion; the travelling highlight shows ongoing work. */
+.progress-fill { position:relative; overflow:hidden; min-width:6px; }
+.progress-fill::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent); transform:translateX(-100%); animation:processing-light 1.8s linear infinite; }
+@keyframes processing-light { to { transform:translateX(100%); } }
+@media (prefers-reduced-motion:reduce) { .progress-fill::after { animation:none; } }
