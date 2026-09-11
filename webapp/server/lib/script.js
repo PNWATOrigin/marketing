@@ -28,10 +28,33 @@ const HEALTH_SALES_SCRIPTS=[
  {hook:'꾸준히 챙겨 먹을 건강식품을 찾고 있다면?',line1:'무조건 유명한 제품보다 내 생활 패턴에 잘 맞고 꾸준히 섭취할 수 있는지 먼저 확인해보세요.',line2:'저는 [제품]이 잘 맞았어요.'},
  {hook:'요즘 제 주변에서 뭐 먹냐고 물어보길래…',line1:'제가 매일 챙기고 있는 건 [제품]이에요.',line2:'건강관리를 어렵게 생각했던 분이라면, 간단한 습관부터 시작해보세요.'},
 ];
-// 상품명 기준으로 20종 중 하나를 고정 선택한다(같은 상품이면 항상 같은 톤, 상품마다는 다양하게).
-function pickHealthScript(name){
+// 건강기능식품 브랜드 인지도형 전용 나레이션 20종 - [브랜드명] 자리표시자.
+const HEALTH_BRAND_SCRIPTS=[
+ {line1:'건강은 챙겨야 하는데, 뭘 어떻게 시작해야 할지 모르겠다면.',line2:'거창한 것보다 매일 이어갈 수 있는 작은 습관부터.',line3:'건강한 일상을 생각하는 브랜드, [브랜드명]입니다.'},
+ {line1:'요즘은 뭘 먹느냐만큼, 어떤 브랜드를 선택하느냐도 중요하잖아요.',line2:'매일 먹는 것인 만큼 더 꼼꼼하게 생각하고,',line3:'건강한 기준을 만들어가는 [브랜드명]입니다.'},
+ {line1:'건강관리는 어렵게 생각할 필요 없더라고요.',line2:'매일 조금씩 나를 챙기는 습관이 중요하니까.',line3:'그 일상의 시작을 함께하는 브랜드, [브랜드명]입니다.'},
+ {line1:'바쁜 하루를 보내다 보면 내 건강은 자꾸 뒤로 밀리죠.',line2:'그래서 더 쉽고 꾸준한 건강 습관을 생각했습니다.',line3:'당신의 일상을 생각하는 [브랜드명]입니다.'},
+ {line1:'매일 먹는 것이라면 아무거나 고르고 싶지는 않잖아요.',line2:'원료부터 품질까지 꼼꼼하게 생각하는 것.',line3:'건강을 대하는 기준이 다른 브랜드, [브랜드명]입니다.'},
+ {line1:'건강을 위해 무언가 시작하고 싶다면,',line2:'작은 습관 하나부터 바꿔보세요.',line3:'매일의 건강한 선택을 함께하는 브랜드, [브랜드명]입니다.'},
+ {line1:'좋은 건강 습관은 하루아침에 만들어지지 않으니까.',line2:'매일 부담 없이 이어갈 수 있는 방법을 고민합니다.',line3:'건강한 일상을 만들어가는 [브랜드명]입니다.'},
+ {line1:'나를 위해 매일 하나씩 챙기는 습관.',line2:'별것 아닌 것 같지만, 그래서 더 중요하죠.',line3:'매일의 건강을 생각하는 브랜드, [브랜드명]입니다.'},
+ {line1:'건강식품을 고를 때 이제는 브랜드부터 보게 되더라고요.',line2:'무엇을 만들고, 어떤 기준으로 만드는지.',line3:'건강을 진지하게 고민하는 [브랜드명]입니다.'},
+ {line1:'내가 매일 먹는 것이라면 조금 더 신중하게.',line2:'더 좋은 선택을 고민하고, 더 나은 기준을 만들어갑니다.',line3:'건강한 생활을 생각하는 브랜드, [브랜드명]입니다.'},
+ {line1:'건강을 챙기는 가장 현실적인 방법은 꾸준함이 아닐까요?',line2:'매일의 작은 습관이 자연스럽게 이어질 수 있도록.',line3:'일상 가까이에서 함께하는 [브랜드명]입니다.'},
+ {line1:'요즘 건강에 관심은 있는데 아직 시작하지 못했다면.',line2:'오늘부터 작은 습관 하나만 만들어보세요.',line3:'더 건강한 일상을 고민하는 브랜드, [브랜드명]입니다.'},
+ {line1:'건강을 위한 선택, 조금 더 까다로워도 괜찮잖아요.',line2:'매일 먹는 것이니까 더 꼼꼼하게 생각하고,',line3:'건강에 대한 새로운 기준을 만드는 [브랜드명]입니다.'},
+ {line1:'하루하루 바쁘게 살다 보면 나를 챙기는 건 쉽지 않죠.',line2:'그래서 일상에서 꾸준히 이어갈 수 있는 건강을 생각합니다.',line3:'당신의 매일을 위한 브랜드, [브랜드명]입니다.'},
+ {line1:'건강은 특별한 날에만 챙기는 게 아니니까.',line2:'오늘도, 내일도 이어갈 수 있는 습관을 생각합니다.',line3:'건강한 라이프스타일을 만들어가는 [브랜드명]입니다.'},
+ {line1:'무조건 많이 챙기는 것보다, 꾸준히 챙기는 게 더 중요하니까.',line2:'매일의 건강한 습관을 위해 더 꼼꼼하게 고민합니다.',line3:'건강을 생각하는 브랜드, [브랜드명]입니다.'},
+ {line1:'요즘 어떤 기준으로 건강식품을 고르고 계세요?',line2:'매일 먹는 제품인 만큼 선택의 기준도 중요하니까.',line3:'건강한 선택을 고민하는 [브랜드명]을 기억해주세요.'},
+ {line1:'나를 위한 건강관리, 이제 미루지 않으려고요.',line2:'작은 습관부터 하나씩 꾸준하게.',line3:'건강한 일상의 곁을 지키는 브랜드, [브랜드명]입니다.'},
+ {line1:'건강을 생각하는 순간 가장 먼저 떠오르는 브랜드가 있다면 좋겠죠.',line2:'매일의 선택에 건강한 기준을 더하고,',line3:'더 나은 일상을 고민하는 [브랜드명]입니다.'},
+ {line1:'건강한 삶은 거창한 계획보다 매일의 선택에서 시작되니까.',line2:'오늘도 더 좋은 습관을 고민하고,',line3:'당신의 건강한 일상과 함께하는 [브랜드명]입니다.'},
+];
+// 이름 기준으로 목록 중 하나를 고정 선택한다(같은 상품이면 항상 같은 톤, 상품마다는 다양하게).
+function pickByHash(name,list){
  let h=0; for(const ch of String(name)) h=(h*31+ch.charCodeAt(0))>>>0;
- return HEALTH_SALES_SCRIPTS[h%HEALTH_SALES_SCRIPTS.length];
+ return list[h%list.length];
 }
 // No model calls. Claims come only from extracted product fields.
 export function generateScript(product,purposeId,category='auto') {
@@ -43,9 +66,15 @@ export function generateScript(product,purposeId,category='auto') {
  const point3=short(features[2]||feature);
  const point4=short(features[3]||next);
  if(category==='health'&&purposeId==='sales'){
-  const t=pickHealthScript(product.name||name);
+  const t=pickByHash(product.name||name,HEALTH_SALES_SCRIPTS);
   const fill=(s)=>short(s.replace('[제품]',name),48);
   const healthLines=[[fill(t.hook),null],[fill(t.line1),null],[fill(t.line2),null],[name,feature],['지금 확인해보세요',brand]];
+  return {purpose:purposeId,totalDuration:15,scenes:healthLines.map(([headline,sub],i)=>({key:['hook','problem','benefit','brand','cta'][i],start:i*3,end:(i+1)*3,duration:3,headline,sub}))};
+ }
+ if(category==='health'&&purposeId==='brand'){
+  const t=pickByHash(product.name||name,HEALTH_BRAND_SCRIPTS);
+  const fill=(s)=>short(s.replace('[브랜드명]',brand),48);
+  const healthLines=[[fill(t.line1),null],[fill(t.line2),null],[fill(t.line3),null],[brand,null],['기억하세요',brand]];
   return {purpose:purposeId,totalDuration:15,scenes:healthLines.map(([headline,sub],i)=>({key:['hook','problem','benefit','brand','cta'][i],start:i*3,end:(i+1)*3,duration:3,headline,sub}))};
  }
  const vacuum=/청소기/.test(product.name||'')&&/자동\s*먼지\s*비움/.test([product.name,...features].join(' '));
