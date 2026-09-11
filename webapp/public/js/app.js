@@ -92,12 +92,6 @@
   let imageSelections = [];
   const purposeGrid = document.getElementById('purpose-grid');
   const startRenderBtn = document.getElementById('start-render-btn');
-  const narrationFile=document.getElementById('narration-file');
-  const transcriptFile=document.getElementById('transcript-file');
-  const narrationStatus=document.getElementById('narration-status');
-  const narrationPreview=document.getElementById('narration-preview');
-  let narrationReady=false,automaticTranscription=false,narrationUrl=null;
-  const refreshStart=()=>{startRenderBtn.disabled=!(selectedPurpose&&narrationReady);};
   const progressFill = document.getElementById('progress-fill');
   const progressStageLabel = document.getElementById('progress-stage-label');
   const previewPanel = document.getElementById('render-preview');
@@ -114,7 +108,7 @@
     queued: '대기열에서 기다리는 중...',
     analyzing: '상품 정보를 분석하는 중...',
     awaiting_purpose: '분석이 끝났어요',
-    scripting: '나레이션 타이밍과 장면을 맞추는 중...',
+    scripting: '대본을 작성하는 중...',
     completed: '완성됐어요!',
     failed: '문제가 발생했어요',
   };
@@ -226,8 +220,6 @@
     if (purposes.length) return purposes;
     const data = await api('/purposes');
     purposes = data.purposes;
-    automaticTranscription=!!data.automaticTranscription;
-    document.getElementById('transcription-help').textContent=automaticTranscription?'음성을 자동으로 인식해요. 기존 시간 자막이 있으면 함께 선택해도 좋아요.':'자동 음성 인식이 아직 연결되지 않았어요. 음성과 시간 자막을 함께 선택해주세요.';
     return purposes;
   }
 
@@ -254,7 +246,7 @@
         card.classList.add('selected');
         card.setAttribute('aria-pressed', 'true');
         selectedPurpose = card.dataset.id;
-        refreshStart();
+        startRenderBtn.disabled = false;
       });
     });
   }
@@ -311,9 +303,6 @@
         renderProductSummary(job.product);
         renderCutoutOptions(job);
         renderPurposeCards();
-        narrationReady=!!job.narration&&(job.narration.ready||automaticTranscription);
-        if(job.narration)narrationStatus.textContent=`${job.narration.duration.toFixed(2)}초 음성 등록됨${job.narration.ready?' · 시간 자막 준비 완료':''}`;
-        refreshStart();
         showView('purpose');
         break;
       }
@@ -388,10 +377,6 @@
     currentJobId = null;
     selectedPurpose = null;
     imageSelections = [];
-    narrationReady=false;narrationFile.value='';transcriptFile.value='';
-    if(narrationUrl)URL.revokeObjectURL(narrationUrl);
-    narrationUrl=null;narrationPreview.hidden=true;narrationPreview.removeAttribute('src');
-    narrationStatus.textContent='사용할 상품 나레이션을 선택해주세요.';
     localStorage.removeItem(STORAGE_KEYS.jobId);
     stopPolling();
     stopFakeProgress();
@@ -435,43 +420,6 @@
       alert(err.message);
       startRenderBtn.disabled = false;
     }
-  });
-
-  narrationFile.addEventListener('change',async()=>{
-    const file=narrationFile.files[0];if(!file||!currentJobId)return;
-    narrationReady=false;refreshStart();narrationFile.disabled=true;
-    narrationStatus.textContent='음성을 등록하고 길이를 확인하는 중...';
-    try{
-      if(file.size>20*1024*1024)throw new Error('20MB 이하 음성을 선택해주세요.');
-      const ext=file.name.split('.').pop().toLowerCase();
-      const type={mp3:'audio/mpeg',wav:'audio/wav',m4a:'audio/mp4'}[ext];
-      if(!type)throw new Error('MP3, WAV, M4A 음성을 선택해주세요.');
-      const {job}=await api(`/jobs/${currentJobId}/narration`,{method:'POST',headers:{'Content-Type':type},body:file});
-      narrationReady=automaticTranscription;
-      if(narrationUrl)URL.revokeObjectURL(narrationUrl);
-      narrationUrl=URL.createObjectURL(file);narrationPreview.src=narrationUrl;narrationPreview.hidden=false;
-      narrationStatus.textContent=`${job.narration.duration.toFixed(2)}초 음성 등록됨${automaticTranscription?'':' · 시간 자막을 선택해주세요.'}`;
-      if(transcriptFile.files[0])await uploadTranscript();
-    }catch(err){narrationStatus.textContent=err.message;}
-    finally{narrationFile.disabled=false;refreshStart();}
-  });
-  async function uploadTranscript(){
-    const file=transcriptFile.files[0];if(!file||!currentJobId)return;
-    if(file.size>80000)throw new Error('자막 파일은 80KB 이하로 선택해주세요.');
-    await api(`/jobs/${currentJobId}/transcript`,{method:'POST',body:JSON.stringify({text:await file.text()})});
-    narrationReady=true;narrationStatus.textContent='음성 · 시간 자막 준비 완료';refreshStart();
-  }
-  transcriptFile.addEventListener('change',()=>uploadTranscript().catch(err=>{narrationStatus.textContent=err.message;}));
-  document.getElementById('download-narration-btn').addEventListener('click',async()=>{
-    try{
-      const response=await fetch(`/api/jobs/${currentJobId}/narration`,{headers:{'X-Client-Id':clientId}});
-      if(!response.ok)throw new Error('보관된 원본 음성을 찾을 수 없어요.');
-      const url=URL.createObjectURL(await response.blob());
-      const link=document.createElement('a');link.href=url;
-      const disposition=response.headers.get('content-disposition')||'';
-      link.download=disposition.match(/filename="([^"]+)"/)?.[1]||'narration-original.mp3';
-      link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
-    }catch(err){alert(err.message);}
   });
 
   retryBtn.addEventListener('click', async () => {

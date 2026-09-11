@@ -2,7 +2,7 @@ import { hasBannedClaim } from './claimsGuard.js';
 
 // 실제 OCR 실행은 교체 가능한 provider(ocrProviders.js)에 위임한다 - 기본은 무료
 // 로컬 OCR(Tesseract)이고, 필요하면 외부 Vision OCR로 바꿀 수 있다. 이 함수의
-// 사용처(jobManager.js, storyboard.js)는 provider가 바뀌어도 그대로 쓸 수 있다.
+// 사용처(jobManager.js)는 provider가 바뀌어도 그대로 쓸 수 있다.
 export { ocrImage } from './ocrProviders.js';
 
 // OCR 결과는 줄바꿈이 뒤섞이고 잡음이 많으므로, 짧고 한글/영문 위주로만 이뤄진

@@ -109,9 +109,6 @@ export function toPublicJob(job) {
         }
       : null,
     scenes: job.scenes || null,
-    narration:job.narration?{duration:job.narration.duration,ready:!!job.narration.words?.length}:null,
-    qa:job.storyboard?.qa||null,
-    warnings:job.warnings||[],
     // 실제 파일 경로는 노출하지 않고, 누끼 결과 존재 여부만 알려준다.
     cutoutOptions: (job.cutoutOptions || []).map((o) => ({ index: o.index, hasCutout: !!o.cutout })),
     imageSelections: job.imageSelections || [],
@@ -165,7 +162,6 @@ export async function cleanupExpiredJobs() {
     await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
 
     if (stale) {
-      await fs.rm(path.join(config.dataDir,'narrations',job.id),{recursive:true,force:true}).catch(()=>{});
       jobs.delete(job.id);
       await fs.rm(jobFilePath(job.id), { force: true }).catch(() => {});
     } else if (expired && job.status === 'completed') {

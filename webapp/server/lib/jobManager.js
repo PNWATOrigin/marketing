@@ -6,14 +6,12 @@ import { getJob, updateJob, setJobProgress } from './jobStore.js';
 import { fetchProductPage, PageFetchError } from './fetchPage.js';
 import { analyzeHtml } from './analyze.js';
 import { downloadImages } from './images.js';
-import { PURPOSES } from './script.js';
+import { generateScript, PURPOSES } from './script.js';
 import { renderVideo } from './render/renderVideo.js';
 import { UnsafeUrlError } from './ssrf.js';
 import { ocrImage, extractCleanLines } from './ocr.js';
 import { cutoutOnBackground } from './cutout.js';
 import { ensureGradientBackground } from './render/gradient.js';
-import { transcribeNarration } from './narration.js';
-import { describeAssets, makeStoryboard } from './storyboard.js';
 import { cached } from './cache.js';
 
 const analyzeQueue = new ConcurrencyQueue(config.maxAnalyzeConcurrency);
@@ -187,23 +185,20 @@ async function runRender(jobId) {
     const workDir = path.join(config.workDir, jobId);
     const watchdog = startProgressWatchdog(jobId);
     try {
-      const narration = await transcribeNarration(job);
-      updateJob(jobId,{narration,stage:'matching'});
+      const script = generateScript(job.product, job.purpose, job.category);
+      const scenes = script.scenes.map((s) => ({ headline: s.headline, sub: s.sub || null }));
+
+      updateJob(jobId, { status: 'rendering', stage: 'rendering', progress: 0, scenes });
       // 이미지 다운로드(0~10%)와 ffmpeg 인코딩(10~100%)을 하나의 진행률로 이어붙인다.
       const imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
         onEach: (done, total) => watchdog.report(total ? Math.round((done / total) * 10) : 0),
       });
       await applyCutouts(imagePaths, path.join(workDir, 'images'), job);
-      const assets=await describeAssets(imagePaths,job.product);
-      const storyboard=makeStoryboard({narration,assets,category:job.category,purpose:job.purpose,product:job.product});
-      updateJob(jobId,{status:'rendering',stage:'rendering',storyboard,scenes:storyboard.shots.map(s=>({headline:s.headline,start:s.start,end:s.end})),warnings:storyboard.warnings});
 
       await fs.mkdir(config.outputDir, { recursive: true });
       const outputPath = path.join(config.outputDir, `${jobId}.mp4`);
       await renderVideo({
-        scenes: storyboard.shots,
-        narration,
-        style:storyboard.style,
+        scenes: script.scenes,
         imagePaths,
         outputPath,
         purpose: job.purpose,
@@ -248,8 +243,6 @@ export function startJob(jobId, purposeId, imageSelections) {
   if (job.status !== 'awaiting_purpose') {
     return { ok: false, error: '지금은 영상 제작을 시작할 수 없는 상태예요.' };
   }
-  if(!job.narration) return {ok:false,error:'기존 나레이션 음성을 먼저 등록해주세요.'};
-  if(!job.narration.words?.length&&!process.env.OPENAI_API_KEY)return {ok:false,error:'시간 자막(SRT/JSON)을 함께 등록하거나 자동 음성 인식을 연결해주세요.'};
   const patch = { purpose: purposeId, status: 'queued', stage: 'queued' };
   if (Array.isArray(imageSelections)) {
     patch.imageSelections = imageSelections.map((s) => (s === 'original' ? 'original' : 'cutout'));

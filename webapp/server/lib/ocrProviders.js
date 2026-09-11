@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { config } from '../config.js';
 
 // OCR을 provider로 분리해서 나중에 외부 Vision OCR을 붙이더라도 호출 쪽
-// (jobManager.js, storyboard.js)은 바꿀 필요가 없게 한다. 기본은 무료 로컬 OCR이고,
+// (jobManager.js)은 바꿀 필요가 없게 한다. 기본은 무료 로컬 OCR이고,
 // 외부 provider가 설정되지 않았거나 호출에 실패하면 항상 로컬로 되돌아간다
 // (최선 노력, 상품 분석 전체를 막지 않고 비용도 발생시키지 않는다).
 
