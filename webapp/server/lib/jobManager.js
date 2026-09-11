@@ -182,6 +182,7 @@ async function runRender(jobId) {
       const outputPath = path.join(config.outputDir, `${jobId}.mp4`);
       await renderVideo({
         scenes: storyboard.shots,
+        sourceData:{product:job.product,script,storyboard,category:job.category,purpose:job.purpose},
         style:storyboard.style,
         imagePaths,
         outputPath,

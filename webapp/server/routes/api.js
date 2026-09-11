@@ -61,7 +61,8 @@ router.get('/jobs/:id/sources',asyncHandler(async(req,res)=>{
   if(!['zip','xml'].includes(format))return res.status(400).json({error:'지원하지 않는 형식이에요.'});
   const file=job.outputPath?.replace(/\.mp4$/,format==='xml'?'.timeline.xml':'.sources.zip');
   if(job.status!=='completed'||!file||!fssync.existsSync(file)||job.expiresAt<Date.now())return res.status(404).json({error:'편집 소스가 없거나 만료됐어요. 새로 제작해주세요.'});
-  res.download(file,format==='xml'?'timeline.xml':'editing-sources.zip');
+  const productName=String(job.product?.name||'상품').replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').trim().slice(0,70);
+  res.download(file,`short studio_${productName}.${format}`);
 }));
 
 router.get('/jobs/:id/storyboard',asyncHandler(async(req,res)=>{

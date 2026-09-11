@@ -105,7 +105,9 @@
       const response=await fetch(`/api/jobs/${currentJobId}/sources?format=${format}`,{headers:{'X-Client-Id':clientId}});
       if(!response.ok)throw new Error('편집 소스가 없거나 만료됐어요. 새로 제작해주세요.');
       const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');
-      link.href=url;link.download=format==='xml'?'timeline.xml':'editing-sources.zip';link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
+      const disposition=response.headers.get('Content-Disposition')||'';
+      const encoded=disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+      link.href=url;link.download=encoded?decodeURIComponent(encoded):`short studio_상품.${format}`;link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
     }catch(err){alert(err.message);}finally{sourcesBtn.disabled=false;}
   });
   const remakeBtn = document.getElementById('remake-btn');

@@ -45,7 +45,7 @@ export function timelineXml(shots){
 <!DOCTYPE xmeml>
 <xmeml version="5"><sequence id="product-shortform"><name>Product Shortform</name><duration>${duration}</duration>${rate}<media><video><format><samplecharacteristics>${rate}<width>1080</width><height>1920</height><anamorphic>FALSE</anamorphic><pixelaspectratio>square</pixelaspectratio><fielddominance>none</fielddominance></samplecharacteristics></format><track>${shots.map((s,i)=>clip(s.asset,s.start,s.end,i)).join('')}</track></video><audio><numOutputChannels>2</numOutputChannels><format><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate></samplecharacteristics></format><track>${clip('audio/bgm.mp3',0,duration/30,'bgm',true,0.35)}</track><track>${clip('audio/boing-timed.wav',0,duration/30,'sfx',true)}</track></audio></media></sequence></xmeml>`;
 }
-export async function exportSources({outputPath,scenes,cues,bgm,effects}){
+export async function exportSources({outputPath,scenes,cues,bgm,effects,sourceData,imagePaths=[]}){
  const paths=[...new Set(scenes.map(s=>s.imagePath))];
  const names=paths.map((p,i)=>`media/product-${i+1}${path.extname(p)}`);
  const shots=scenes.map(s=>({start:s.start,end:s.end,asset:names[paths.indexOf(s.imagePath)],transition:'cut',fit:'contain'}));
@@ -53,6 +53,8 @@ export async function exportSources({outputPath,scenes,cues,bgm,effects}){
  await fs.writeFile(outputPath.replace(/\.mp4$/,'.timeline.xml'),xml,'utf8');
  await writeZip(outputPath.replace(/\.mp4$/,'.sources.zip'),[
   ...paths.map((p,i)=>({name:names[i],path:p})),
+  ...[...new Set(imagePaths)].filter(p=>!paths.includes(p)).map((p,i)=>({name:`prepared/image-${i+1}${path.extname(p)}`,path:p})),
+  ...(sourceData?[{name:'analysis/product.json',text:JSON.stringify(sourceData.product,null,2)},{name:'analysis/script.json',text:JSON.stringify(sourceData.script,null,2)},{name:'analysis/storyboard.json',text:JSON.stringify(sourceData.storyboard,(key,value)=>['imagePath','stickerPath','originalPath'].includes(key)?undefined:value,2)},{name:'analysis/settings.json',text:JSON.stringify({sourceUrl:sourceData.product?.sourceUrl,category:sourceData.category,purpose:sourceData.purpose,audioMode:'bgm-only'},null,2)}]:[]),
   ...[...new Set(scenes.map(s=>s.stickerPath).filter(Boolean))].map((p,i)=>({name:`stickers/sticker-${i+1}.png`,path:p})),
   {name:'audio/bgm.mp3',path:bgm},{name:'audio/boing-timed.wav',path:effects},
   {name:'captions.srt',text:cues.map((c,i)=>`${i+1}\n${stamp(c.start)} --> ${stamp(c.end)}\n${c.text}\n`).join('\n')},
