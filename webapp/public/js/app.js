@@ -206,10 +206,6 @@
         });
       });
     });
-    cutoutPickerGrid.querySelectorAll('img').forEach(async img=>{
-      const source=img.getAttribute('src');img.removeAttribute('src');
-      try{const response=await fetch(source,{headers:{'X-Client-Id':clientId}});if(!response.ok)return;const url=URL.createObjectURL(await response.blob());img.onload=()=>URL.revokeObjectURL(url);img.src=url;}catch{}
-    });
   }
 
   function escapeHtml(str) {

@@ -12,6 +12,7 @@ import { UnsafeUrlError } from './ssrf.js';
 import { ocrImage, extractCleanLines } from './ocr.js';
 import { cutoutOnBackground } from './cutout.js';
 import { ensureGradientBackground } from './render/gradient.js';
+import { describeAssets, makeStoryboard } from './storyboard.js';
 import { cached } from './cache.js';
 
 const analyzeQueue = new ConcurrencyQueue(config.maxAnalyzeConcurrency);
@@ -185,20 +186,27 @@ async function runRender(jobId) {
     const workDir = path.join(config.workDir, jobId);
     const watchdog = startProgressWatchdog(jobId);
     try {
-      const script = generateScript(job.product, job.purpose, job.category);
-      const scenes = script.scenes.map((s) => ({ headline: s.headline, sub: s.sub || null }));
-
-      updateJob(jobId, { status: 'rendering', stage: 'rendering', progress: 0, scenes });
+      const script=generateScript(job.product,job.purpose,job.category);
+      const timing={duration:15,words:script.scenes.flatMap(s=>[
+        {start:s.start,end:s.start+1.4,text:s.headline},
+        {start:s.start+1.4,end:s.end,text:s.sub||s.headline},
+      ])};
+      updateJob(jobId,{stage:'matching'});
       // 이미지 다운로드(0~10%)와 ffmpeg 인코딩(10~100%)을 하나의 진행률로 이어붙인다.
       const imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
         onEach: (done, total) => watchdog.report(total ? Math.round((done / total) * 10) : 0),
       });
       await applyCutouts(imagePaths, path.join(workDir, 'images'), job);
+      const assets=await describeAssets(imagePaths,job.product);
+      const storyboard=makeStoryboard({narration:timing,assets,category:job.category,purpose:job.purpose,product:job.product});
+      storyboard.audioMode='bgm-only';
+      updateJob(jobId,{status:'rendering',stage:'rendering',storyboard,scenes:storyboard.shots.map(s=>({headline:s.headline,start:s.start,end:s.end})),warnings:storyboard.warnings});
 
       await fs.mkdir(config.outputDir, { recursive: true });
       const outputPath = path.join(config.outputDir, `${jobId}.mp4`);
       await renderVideo({
-        scenes: script.scenes,
+        scenes: storyboard.shots,
+        style:storyboard.style,
         imagePaths,
         outputPath,
         purpose: job.purpose,

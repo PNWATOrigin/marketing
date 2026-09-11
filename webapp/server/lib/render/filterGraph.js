@@ -14,10 +14,11 @@ const DECOR_FONT_SIZE = Math.round(30 * SCALE);
 const BORDER_W = Math.round(4 * SCALE);
 
 const escapePath=value=>String(value).replace(/\\/g,'/').replace(/:/g,'\\:').replace(/'/g,"'\\''");
-function size(text){return Math.min(Math.round(48*SCALE),Math.floor(TEXT_WIDTH_BUDGET/Math.max(1,[...String(text)].length)));}
+// 여러 줄로 줄바꿈된 자막은 가장 긴 줄 기준으로 폭에 맞춰 크기를 정한다.
+function size(text){const longest=Math.max(1,...String(text).split('\n').map(l=>[...l].length));return Math.min(Math.round(48*SCALE),Math.floor(TEXT_WIDTH_BUDGET/longest));}
 function caption(text,file,font,y,duration,decoration=false){
  const source=file?`textfile='${escapePath(file)}'`:`text='${String(text).replace(/[\\':;\[\],]/g,' ')}'`;
- return `drawtext=fontfile='${escapePath(font)}':${source}:expansion=none:fontsize=${decoration?DECOR_FONT_SIZE:size(text)}:fontcolor=0xFFF1FA:borderw=${BORDER_W}:bordercolor=0xF369B1:shadowcolor=0xEE68B0@0.6:shadowx=2:shadowy=3:x=(w-text_w)/2:y='${y}-10*exp(-12*t)*cos(18*t)':alpha='min(1,t/0.10)*min(1,(${duration}-t)/0.10)'`;
+ return `drawtext=fontfile='${escapePath(font)}':${source}:expansion=none:fontsize=${decoration?DECOR_FONT_SIZE:size(text)}:line_spacing=${Math.round(8*SCALE)}:fontcolor=0xFFF1FA:borderw=${BORDER_W}:bordercolor=0xF369B1:shadowcolor=0xEE68B0@0.6:shadowx=2:shadowy=3:x=(w-text_w)/2:y='${y}-10*exp(-12*t)*cos(18*t)':alpha='min(1,t/0.10)*min(1,(${duration}-t)/0.10)'`;
 }
 export function buildRenderPlan({scenes,sceneImagePaths,fonts}){
  if(scenes.length!==sceneImagePaths.length)throw new Error('장면 수와 이미지 수가 다릅니다.');

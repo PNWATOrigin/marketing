@@ -39,6 +39,10 @@ export const config = {
   ocrProvider: process.env.OCR_PROVIDER || 'local',
   ocrVisionApiKey: process.env.OCR_VISION_API_KEY || null,
 
+  // 나레이션 음성 자동 합성(무료 TTS) 설정.
+  narrationVoice: process.env.NARRATION_VOICE || 'ko-KR-SunHiNeural',
+  ttsTimeoutMs: int('TTS_TIMEOUT_MS', 20000),
+
   maxHtmlBytes: int('MAX_HTML_BYTES', 3 * 1024 * 1024),
   maxImageBytes: int('MAX_IMAGE_BYTES', 8 * 1024 * 1024),
   maxImages: int('MAX_IMAGES', 8),

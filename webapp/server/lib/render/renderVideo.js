@@ -5,6 +5,26 @@ import { resolveFonts } from './fonts.js';
 import { buildRenderPlan, buildNarrationPlan, RENDER_CONSTANTS } from './filterGraph.js';
 import { runFfmpeg, runFfprobe, FfmpegError } from './ffmpegRunner.js';
 
+// 글자 수로만 잘라 줄바꿈하면 단어 중간이 끊겨 읽기 불편하므로, 띄어쓰기(어절) 단위로
+// 줄바꿈한다. 내용이 잘리지 않도록 줄 수는 제한하지 않는다(자막 영역이 좁아 보통
+// 1~2줄에서 끝난다 - script.js가 애초에 문구 길이를 짧게 만들어둔다).
+function wrapCaption(text, maxCharsPerLine = 20) {
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word;
+    if (line && [...next].length > maxCharsPerLine) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = next;
+    }
+  }
+  if (line) lines.push(line);
+  return lines.join('\n');
+}
+
 function pickSceneImages(scenes, imagePaths, gradientPath) {
   if (!imagePaths.length) throw new FfmpegError('상품 이미지를 가져오지 못했어요. 다른 상품 URL로 다시 시도해주세요.');
   return scenes.map((_, i) => imagePaths[i % imagePaths.length]);
@@ -51,23 +71,26 @@ async function verifyOutput(outputPath, expectedDuration) {
  * 이미지가 부족하면(0장 포함) 민트→화이트 그라데이션 배경으로 대체해서
  * 이미지 문제만으로 전체 렌더링이 실패하지 않게 한다.
  */
-export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, purpose, narration, style }) {
+export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, purpose, style }) {
   const fonts = resolveFonts();
   const gradientPath = null;
   const sceneImagePaths = pickSceneImages(scenes, imagePaths, gradientPath);
 
   const textDir = await fs.mkdtemp(path.join(path.dirname(outputPath), 'captions-'));
   const prepared = await Promise.all(scenes.map(async (scene, i) => {
+    const headline = wrapCaption(scene.headline);
+    const sub = wrapCaption(scene.sub);
     const textFiles = { headline: path.join(textDir, `${i}-head.txt`), sub: path.join(textDir, `${i}-sub.txt`) };
-    await fs.writeFile(textFiles.headline, String(scene.headline || ''), 'utf8');
-    await fs.writeFile(textFiles.sub, String(scene.sub || ''), 'utf8');
+    await fs.writeFile(textFiles.headline, headline, 'utf8');
+    await fs.writeFile(textFiles.sub, sub, 'utf8');
+    scene = { ...scene, headline, sub };
     const captionFiles=[];
-    if(narration) {
+    if(style) {
       let group=[];
       const flush=async()=>{
         if(!group.length)return;
         const text=group.map(c=>c.text).join(' ');
-        const lines=text.match(/.{1,18}(?:\s|$)|.{1,18}/gu)||[text];
+        const lines=wrapCaption(text,18).split('\n');
         const file=path.join(textDir,`${i}-cue-${captionFiles.length}.txt`);
         await fs.writeFile(file,lines.join('\n'),'utf8');
         captionFiles.push({path:file,start:Math.max(0,group[0].start-scene.start),end:Math.min(scene.duration,group.at(-1).end-scene.start)});
@@ -78,7 +101,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     }
     return { ...scene, textFiles, captionFiles };
   }));
-  const plan = narration ? buildNarrationPlan({scenes:prepared,fonts,style}) : buildRenderPlan({ scenes: prepared, sceneImagePaths, fonts });
+  const plan = style ? buildNarrationPlan({scenes:prepared,fonts,style}) : buildRenderPlan({ scenes: prepared, sceneImagePaths, fonts });
 
   const args = [
     '-y',
@@ -86,7 +109,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     '-loglevel',
     'error',
     ...plan.inputArgs,
-    ...(narration?['-protocol_whitelist','file,pipe','-f',narration.format,'-i',narration.path]:['-i',pickBgm(purpose)]),
+    '-stream_loop','-1','-i',pickBgm(purpose),
     '-filter_complex_threads', '1',
     '-filter_complex',
     plan.filterComplex,
@@ -98,8 +121,8 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     (Math.ceil(plan.totalDuration*30)/30).toFixed(4),
     '-map', `${sceneImagePaths.length}:a`,
     // 배경음악이 영상 길이에 맞춰 자연스럽게 끝나도록 페이드아웃하고, 자막이 잘 들리도록 볼륨을 낮춘다.
-    ...(narration?[]:['-af', `volume=0.55,afade=t=out:st=${Math.max(0, plan.totalDuration - 0.4).toFixed(2)}:d=0.4`]),
-    '-c:a', 'aac', '-b:a', narration?'192k':'96k',
+    '-af', `volume=0.35,afade=t=in:d=0.2,afade=t=out:st=${Math.max(0, plan.totalDuration - 0.4).toFixed(2)}:d=0.4`,
+    '-c:a', 'aac', '-b:a', '128k',
     '-c:v',
     'libx264',
     '-threads', '2',
@@ -121,9 +144,5 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     await fs.rm(textDir, { recursive: true, force: true });
   }
   const info = await verifyOutput(outputPath, plan.totalDuration);
-  if(narration){
-    const probe=JSON.parse(await runFfprobe(['-v','error','-select_streams','a:0','-show_entries','stream=duration','-of','json',outputPath]));
-    if(!probe.streams?.[0]||Math.abs(Number(probe.streams[0].duration)-narration.duration)>0.12)throw new FfmpegError('원본 음성 길이 검증에 실패했어요.');
-  }
   return { outputPath, ...info, totalDuration: plan.totalDuration };
 }

@@ -45,8 +45,15 @@ function asyncHandler(fn) {
 }
 
 router.get('/purposes', (req, res) => {
-  res.json({ purposes: Object.values(PURPOSES) });
+  res.json({ purposes: Object.values(PURPOSES), version:'bgm-only-v2', narrationRequired:false, audioMode:'bgm-only' });
 });
+
+router.get('/jobs/:id/storyboard',asyncHandler(async(req,res)=>{
+  const job=getJob(req.params.id);
+  if(!job||job.clientId!==getClientId(req))return res.status(403).json({error:'이 작업에 접근할 수 없어요.'});
+  if(!job.storyboard)return res.status(404).json({error:'아직 편집 계획이 없어요.'});
+  res.json({...job.storyboard,shots:job.storyboard.shots.map(({imagePath,...shot})=>shot)});
+}));
 
 router.post(
   '/jobs',
