@@ -49,10 +49,20 @@ async function enrichWithImageText(product, workDir) {
     // 넉넉히 잡고, 실제 OCR 대상 수는 따로 제한해 전체 처리 시간을 지킨다.
     const targets = (product.images || []).slice(0, 4);
     if (!targets.length) return;
-    const imagePaths = (await downloadImages(targets, workDir, { max: 4 })).slice(0, 6);
-    const texts = await Promise.all(imagePaths.map((p) => ocrImage(p, config.ocrTimeoutMs)));
-    const lines = extractCleanLines(texts.join('\n'), 4 - (product.features?.length || 0));
+    // OCR은 사진이 아니라 글자 위주의 안내 이미지(홍보 문구 배너 등)를 오히려 읽고
+    // 싶은 경우가 많아, 영상 장면용으로 쓰는 "사진다움" 필터는 건너뛴다.
+    const imagePaths = (await downloadImages(targets, workDir, { max: 4, skipPhotoFilter: true })).slice(0, 6);
+    // tesseract를 동시에 여러 개 띄우면 리소스가 제한된 환경(무료 호스팅 등)에서
+    // 전부 조용히 실패하는 경우가 있어(개별 오류 없이 빈 결과), 순차적으로 실행한다.
+    const texts = [];
+    for (const p of imagePaths) {
+      texts.push(await ocrImage(p, config.ocrTimeoutMs));
+    }
+    const { lines, blockedCount } = extractCleanLines(texts.join('\n'), 4 - (product.features?.length || 0));
     if (lines.length) product.features = [...(product.features || []), ...lines].slice(0, 4);
+    if (blockedCount > 0) {
+      product.warnings = [...(product.warnings || []), '검증되지 않은 과장된 표현이 포함된 문구는 제외했어요.'];
+    }
   } catch {
     // OCR은 부가 기능이므로 실패해도 무시한다.
   } finally {
