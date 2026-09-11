@@ -51,7 +51,7 @@ async function verifyOutput(outputPath, expectedDuration) {
  * 이미지가 부족하면(0장 포함) 민트→화이트 그라데이션 배경으로 대체해서
  * 이미지 문제만으로 전체 렌더링이 실패하지 않게 한다.
  */
-export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, purpose, narration, style }) {
+export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, purpose, style }) {
   const fonts = resolveFonts();
   const gradientPath = null;
   const sceneImagePaths = pickSceneImages(scenes, imagePaths, gradientPath);
@@ -62,7 +62,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     await fs.writeFile(textFiles.headline, String(scene.headline || ''), 'utf8');
     await fs.writeFile(textFiles.sub, String(scene.sub || ''), 'utf8');
     const captionFiles=[];
-    if(narration) {
+    if(style) {
       let group=[];
       const flush=async()=>{
         if(!group.length)return;
@@ -78,7 +78,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     }
     return { ...scene, textFiles, captionFiles };
   }));
-  const plan = narration ? buildNarrationPlan({scenes:prepared,fonts,style}) : buildRenderPlan({ scenes: prepared, sceneImagePaths, fonts });
+  const plan = style ? buildNarrationPlan({scenes:prepared,fonts,style}) : buildRenderPlan({ scenes: prepared, sceneImagePaths, fonts });
 
   const args = [
     '-y',
@@ -86,7 +86,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     '-loglevel',
     'error',
     ...plan.inputArgs,
-    ...(narration?['-protocol_whitelist','file,pipe','-f',narration.format,'-i',narration.path]:['-i',pickBgm(purpose)]),
+    '-stream_loop','-1','-i',pickBgm(purpose),
     '-filter_complex_threads', '1',
     '-filter_complex',
     plan.filterComplex,
@@ -98,8 +98,8 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     (Math.ceil(plan.totalDuration*30)/30).toFixed(4),
     '-map', `${sceneImagePaths.length}:a`,
     // 배경음악이 영상 길이에 맞춰 자연스럽게 끝나도록 페이드아웃하고, 자막이 잘 들리도록 볼륨을 낮춘다.
-    ...(narration?[]:['-af', `volume=0.55,afade=t=out:st=${Math.max(0, plan.totalDuration - 0.4).toFixed(2)}:d=0.4`]),
-    '-c:a', 'aac', '-b:a', narration?'192k':'96k',
+    '-af', `volume=0.35,afade=t=in:d=0.2,afade=t=out:st=${Math.max(0, plan.totalDuration - 0.4).toFixed(2)}:d=0.4`,
+    '-c:a', 'aac', '-b:a', '128k',
     '-c:v',
     'libx264',
     '-threads', '2',
@@ -121,9 +121,5 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     await fs.rm(textDir, { recursive: true, force: true });
   }
   const info = await verifyOutput(outputPath, plan.totalDuration);
-  if(narration){
-    const probe=JSON.parse(await runFfprobe(['-v','error','-select_streams','a:0','-show_entries','stream=duration','-of','json',outputPath]));
-    if(!probe.streams?.[0]||Math.abs(Number(probe.streams[0].duration)-narration.duration)>0.12)throw new FfmpegError('원본 음성 길이 검증에 실패했어요.');
-  }
   return { outputPath, ...info, totalDuration: plan.totalDuration };
 }
