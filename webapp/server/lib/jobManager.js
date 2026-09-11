@@ -10,7 +10,7 @@ import { generateScript, PURPOSES } from './script.js';
 import { renderVideo } from './render/renderVideo.js';
 import { UnsafeUrlError } from './ssrf.js';
 import { ocrImage, extractCleanLines } from './ocr.js';
-import { cutoutOnBackground } from './cutout.js';
+import { cutoutOnBackground, addDetailStickers } from './cutout.js';
 import { ensureGradientBackground } from './render/gradient.js';
 import { describeAssets, makeStoryboard } from './storyboard.js';
 import { cached } from './cache.js';
@@ -173,6 +173,7 @@ async function runRender(jobId) {
       updateJob(jobId,{previewPaths:imagePaths});
       if(!job.product.detailOnly)await applyCutouts(imagePaths, path.join(workDir, 'images'), job);
       const assets=await describeAssets(imagePaths,job.product);
+      if(job.product.detailOnly)await addDetailStickers(assets,path.join(workDir,'images'));
       const storyboard=makeStoryboard({narration:timing,assets,category:job.category,purpose:job.purpose,product:job.product});
       storyboard.audioMode='bgm-only';
       updateJob(jobId,{status:'rendering',stage:'rendering',storyboard,scenes:storyboard.shots.map(s=>({headline:s.headline,start:s.start,end:s.end})),warnings:storyboard.warnings});

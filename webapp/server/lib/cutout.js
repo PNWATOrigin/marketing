@@ -32,3 +32,20 @@ export async function cutoutOnBackground(inputPath, outputPath, backgroundPath, 
     proc.on('close', (code) => resolve(code === 0 ? outputPath : null));
   });
 }
+
+// Only a few sequential candidates: keep memory bounded on the free server.
+export async function addDetailStickers(assets, workDir) {
+  const path = await import('node:path');
+  let accepted=0;
+  for (const asset of assets.filter(a=>!a.animated && !['TEXT_IMAGE','LOGO','UNUSABLE'].includes(a.type)).slice(0,3)) {
+    const stickerPath=path.join(workDir,`sticker-${accepted}.png`);
+    const composition=path.join(workDir,`sticker-scene-${accepted}.jpg`);
+    try {
+      await exec(process.env.PYTHON_PATH||'python3',[fileURLToPath(new URL('./detailSticker.py',import.meta.url)),asset.path,stickerPath,composition],{timeout:45000,windowsHide:true,env:{...process.env,OMP_NUM_THREADS:'1'}});
+      // Preserve source OCR tags so the sticker is selected for the same subject.
+      Object.assign(asset,{path:composition,stickerPath,originalPath:asset.path,width:1080,height:1920,composition:1080/1920,provenance:asset.provenance+'+photo-region+cutout'});
+      accepted++;
+    } catch { /* Failed quality checks retain the original image. */ }
+  }
+  return assets;
+}

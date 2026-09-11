@@ -53,6 +53,7 @@ export async function exportSources({outputPath,scenes,cues,bgm,effects}){
  await fs.writeFile(outputPath.replace(/\.mp4$/,'.timeline.xml'),xml,'utf8');
  await writeZip(outputPath.replace(/\.mp4$/,'.sources.zip'),[
   ...paths.map((p,i)=>({name:names[i],path:p})),
+  ...[...new Set(scenes.map(s=>s.stickerPath).filter(Boolean))].map((p,i)=>({name:`stickers/sticker-${i+1}.png`,path:p})),
   {name:'audio/bgm.mp3',path:bgm},{name:'audio/boing-timed.wav',path:effects},
   {name:'captions.srt',text:cues.map((c,i)=>`${i+1}\n${stamp(c.start)} --> ${stamp(c.end)}\n${c.text}\n`).join('\n')},
   {name:'timeline.xml',text:xml},

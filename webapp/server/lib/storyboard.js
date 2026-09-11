@@ -66,13 +66,13 @@ export function makeStoryboard({ narration, assets, category, purpose, product }
     const closing=i===boundaries.length-2;
     const best=choose(text,usable,used,previous,style,closing);
     used.set(best.asset.id,(used.get(best.asset.id)||0)+1);previous=best.asset.id;
-    return { id:i,start,end,duration:end-start,headline:text,sub:'',cues,assetId:best.asset.id,imagePath:best.asset.path,assetType:best.asset.type,animated:best.asset.animated,semanticScore:best.semantic,matchMethod:best.semantic?'ocr-keyword':'product-fallback',motion:'hold',role:start<3?'hook':closing?'closing':'body',transition:'cut' };
+    return { id:i,start,end,duration:end-start,headline:text,sub:'',cues,assetId:best.asset.id,imagePath:best.asset.path,stickerPath:best.asset.stickerPath,assetType:best.asset.type,animated:best.asset.animated,semanticScore:best.semantic,matchMethod:best.semantic?'ocr-keyword':'product-fallback',motion:'hold',role:start<3?'hook':closing?'closing':'body',transition:'cut' };
   });
   const board={version:1,category,purpose,productName:product.name,duration,style,shots,warnings:[]};
   board.qa=assessStoryboard(board);
   if (board.qa.score<80) {
     // One deterministic repair: alternate available assets and stabilize the final frame.
-    for(let i=1;i<shots.length;i++) if(shots[i].assetId===shots[i-1].assetId&&usable.length>1){const a=usable.find(a=>a.id!==shots[i-1].assetId);Object.assign(shots[i],{assetId:a.id,imagePath:a.path,assetType:a.type,animated:a.animated,semanticScore:affinity(shots[i].headline,a)});}
+    for(let i=1;i<shots.length;i++) if(shots[i].assetId===shots[i-1].assetId&&usable.length>1){const a=usable.find(a=>a.id!==shots[i-1].assetId);Object.assign(shots[i],{assetId:a.id,imagePath:a.path,stickerPath:a.stickerPath,assetType:a.type,animated:a.animated,semanticScore:affinity(shots[i].headline,a)});}
     shots.at(-1).motion='hold';board.repaired=true;board.qa=assessStoryboard(board);
   }
   if(shots.some(s=>!s.semanticScore)) board.warnings.push('일부 장면은 OCR 의미 일치가 확인되지 않아 해당 상품 사진을 사용했어요.');
