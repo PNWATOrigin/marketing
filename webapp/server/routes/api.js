@@ -50,6 +50,12 @@ router.get('/purposes', (req, res) => {
 });
 
 const uploading=new Set();
+router.get('/jobs/:id/narration',asyncHandler(async(req,res)=>{
+  const job=getJob(req.params.id);
+  if(!job||job.clientId!==getClientId(req))return res.status(403).json({error:'이 작업에 접근할 수 없어요.'});
+  if(!job.narration?.path||!fssync.existsSync(job.narration.path))return res.status(404).json({error:'보관된 원본 음성이 없어요.'});
+  res.download(job.narration.path,'narration-original'+path.extname(job.narration.path));
+}));
 router.post('/jobs/:id/narration', (req,res,next)=>{
   const job=getJob(req.params.id);
   if(!job||job.clientId!==getClientId(req))return res.status(403).json({error:'이 작업에 접근할 수 없어요.'});
