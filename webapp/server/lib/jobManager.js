@@ -221,7 +221,7 @@ async function runRender(jobId) {
     } catch (err) {
       const attempts = (job.attempts || 0) + 1;
       updateJob(jobId, { attempts });
-      if (!aiVideoEnabled() && attempts < config.maxRenderAttempts && !/문구가 부족|사진을 찾지|사진이 부족/.test(err.message||'')) {
+      if (!aiVideoEnabled() && attempts < config.maxRenderAttempts && /ECONNRESET|EAI_AGAIN|ETIMEDOUT|연결이 끊|일시적/.test(err.message||'')) {
         updateJob(jobId, { error: friendlyError(err) });
         continue;
       }

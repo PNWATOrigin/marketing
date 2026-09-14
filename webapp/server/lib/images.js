@@ -5,6 +5,8 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { config } from '../config.js';
 import { safeFetch } from './safeHttp.js';
+import {createImageReuse} from './imageReuse.js';
+const reuseImages=createImageReuse();
 
 const exec = promisify(execFile);
 
@@ -186,13 +188,22 @@ export async function downloadImages(urls, destDir, { max = config.maxImages, on
   const targets = urls.slice(0, max); // 순차 재시도가 없으니 후보를 과하게 늘릴 필요가 없다
 
   let done = 0;
-  const results = await Promise.all(
-    targets.map(async (url, i) => {
-      const result = await downloadOne(url, destDir, i, { skipPhotoFilter, productHero:heroImages.includes(url) });
+  const results = new Array(targets.length);
+  let next=0;
+  const worker=async()=>{
+    while(next<targets.length){
+      const i=next++,url=targets[i],productHero=heroImages.includes(url);
+      const items=await reuseImages(JSON.stringify([url,skipPhotoFilter,productHero]),async()=>{
+        const files=await downloadOne(url,destDir,i,{skipPhotoFilter,productHero});
+        return Promise.all(files.map(async file=>({suffix:path.basename(file).replace(/^img_\d+/,''),data:await fs.readFile(file)})));
+      });
+      results[i]=await Promise.all(items.map(async item=>{
+        const file=path.join(destDir,`img_${i}${item.suffix}`);await fs.writeFile(file,item.data);return file;
+      }));
       done += 1;
       onEach?.(done, targets.length);
-      return result;
-    })
-  );
+    }
+  };
+  await Promise.all([worker(),worker()]);
   return results.flat();
 }

@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {createImageReuse} from '../server/lib/imageReuse.js';
+test('reuse preserves bytes and separates photo-filter modes',async()=>{const reuse=createImageReuse();let calls=0;const compute=async()=>{calls++;return [{suffix:'_slice0.jpg',data:Buffer.from('original')}];};await reuse('photo',compute);const hit=await reuse('photo',compute);assert.equal(calls,1);assert.equal(hit[0].data.toString(),'original');await reuse('ocr',compute);assert.equal(calls,2);});
+test('empty results are not cached',async()=>{const reuse=createImageReuse();let calls=0;for(let i=0;i<2;i++)await reuse('x',async()=>{calls++;return []});assert.equal(calls,2);});
+test('expired entries are recomputed',async()=>{const reuse=createImageReuse({ttl:0});let calls=0;for(let i=0;i<2;i++)await reuse('x',async()=>{calls++;return [{data:Buffer.from('a')}];});assert.equal(calls,2);});
