@@ -275,6 +275,10 @@
       }
       case 'awaiting_purpose': {
         const detected=job.product?.detectedCategory;
+        if(!detected) {
+          window.alert('상품 카테고리를 확실하게 확인하지 못했어요. 상품명과 상세 설명이 있는 개별 상품 URL을 입력해주세요.');
+          clearJob(); showView('input'); return;
+        }
         if(detected && detected!==(job.requestedCategory||job.category) && !categoryCheckedJobs.has(job.id)) {
           categoryCheckedJobs.add(job.id);
           const names={digital:'디지털/가전',health:'건강기능식품'};

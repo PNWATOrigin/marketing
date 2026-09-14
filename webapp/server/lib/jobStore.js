@@ -90,6 +90,7 @@ export function toPublicJob(job) {
     stage: job.stage,
     progress: job.progress,
     category: job.category,
+    requestedCategory: job.requestedCategory || job.category,
     purpose: job.purpose,
     product: job.product
       ? {
@@ -98,6 +99,8 @@ export function toPublicJob(job) {
           // 분석 화면에 그대로 보여주면 어색해서, 알아본 제품 종류(에어컨 등)가 있으면
           // 짧게 보여줄 이름을 함께 내려준다. 없으면 원래 이름을 그대로 쓴다.
           displayName: (job.category === 'digital' && simplifyApplianceName(job.product.name)) || job.product.name,
+          detectedCategory: job.product.detectedCategory || null,
+          categoryDetection: job.product.categoryDetection || null,
           brand: job.product.brand,
           price: job.product.price,
           originalPrice: job.product.originalPrice,
