@@ -1,3 +1,4 @@
+import {nextScriptVariant} from './scriptRotation.js';
 import { generateExampleScript } from './exampleTemplates.js';
 import { addAiClips, aiVideoEnabled, aiVideoConfigured } from './aiVideo.js';
 import { classifyCategory, categoryPatch, categoryStartError } from './category.js';
@@ -154,7 +155,8 @@ async function runRender(jobId) {
     const workDir = path.join(config.workDir, jobId);
     const watchdog = startProgressWatchdog(jobId);
     try {
-      const script=generateExampleScript(job.product,job.purpose,job.category);
+      if(!Number.isInteger(job.scriptVariant)){job.scriptVariant=nextScriptVariant(job.product);updateJob(jobId,{scriptVariant:job.scriptVariant});}
+      const script=generateExampleScript(job.product,job.purpose,job.category,job.scriptVariant);
       const timing={duration:15,sceneBoundaries:[...script.scenes.map(s=>s.start),15],words:script.scenes.flatMap(s=>[
         {start:s.start,end:s.start+s.duration/2,text:s.headline},
         {start:s.start+s.duration/2,end:s.end,text:s.sub||s.headline},
