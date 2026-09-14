@@ -17,12 +17,12 @@ async function localOcr(imagePath, timeoutMs) {
     imagePath=scaled;
   } catch {}
   try {
-  return await new Promise((resolve) => {
+  return await new Promise((resolve, reject) => {
     execFile(
       'tesseract',
       [imagePath, 'stdout', '-l', 'kor+eng', '--psm', '6'],
       { timeout: Math.max(timeoutMs,15000), env:{...process.env,OMP_THREAD_LIMIT:'1'}, maxBuffer: 1024 * 1024 },
-      (err, stdout) => resolve(err ? '' : stdout)
+      (err, stdout) => err ? reject(err) : resolve(stdout)
     );
   });
   } finally { await fs.rm(scaled,{force:true}).catch(()=>{}); }
@@ -49,10 +49,7 @@ export async function ocrImage(imagePath, timeoutMs) {
   }
   const hash=digest(await fs.readFile(imagePath));
   try {
-    return await cached('ocr-text-v1',hash,async()=>{
-      const text=await localOcr(imagePath,timeoutMs);
-      if(!text.trim())throw new Error('OCR_EMPTY');
-      return text;
-    },3600000);
-  } catch(err) {if(err.message==='OCR_EMPTY')return '';throw err;}
+    // Successful blank OCR is reusable too; failures must never enter the cache.
+    return await cached('ocr-text-v1',hash,()=>localOcr(imagePath,timeoutMs),3600000);
+  } catch { return ''; }
 }

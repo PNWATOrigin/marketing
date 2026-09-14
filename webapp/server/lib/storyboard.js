@@ -22,9 +22,12 @@ export async function describeAssets(paths, product, onProgress=()=>{}) {
     const i=next++;
     const file = paths[i], hash = digest(await fs.readFile(file));
     const info = await cached('asset-analysis-v2-photo-first', hash, async () => {
-      const data = JSON.parse(await runFfprobe(['-v','error','-show_entries','stream=width,height,nb_frames:format=duration','-of','json',file]));
+      const [probe, text] = await Promise.all([
+        runFfprobe(['-v','error','-show_entries','stream=width,height,nb_frames:format=duration','-of','json',file]),
+        ocrImage(file, 6000),
+      ]);
+      const data = JSON.parse(probe);
       const s = data.streams?.[0] || {};
-      const text = await ocrImage(file, 6000);
       const type = isTextPanel(text,s.width,s.height) ? 'TEXT_IMAGE' : rules.find(([,r])=>r.test(text))?.[0] || 'DETAIL';
       return { width:s.width, height:s.height, text, type, animated: Number(s.nb_frames)>1 || Number(data.format?.duration)>0.1 };
     });
