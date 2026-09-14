@@ -305,7 +305,9 @@
   }
 
   const categoryNoticeJobs=new Set();
+  let recoveryPurpose=null,recoveryAttempts=0;
   function applyJobState(job) {
+    try{localStorage.setItem('sfas_recovery',JSON.stringify({id:job.id,url:localStorage.getItem(STORAGE_KEYS.url),category:job.requestedCategory||job.category,purpose:job.purpose,at:Date.now(),status:job.status}));}catch{}
     if(job.product)captionHistoryKey='caption-hook-v2:'+String(job.product.displayName||job.product.name||job.url);
     switch (job.status) {
       case 'queued': {
@@ -393,6 +395,12 @@
       const { job } = await api(`/jobs/${jobId}?t=${Date.now()}`);
       if(currentJobId!==jobId||version!==pollVersion)return;
       missingCount=0; missingJob=false;
+      if(job.status==='awaiting_purpose'&&recoveryPurpose&&job.product?.detectedCategory===job.requestedCategory){
+        const purpose=recoveryPurpose;recoveryPurpose=null;
+        const result=await api(`/jobs/${jobId}/start`,{method:'POST',body:JSON.stringify({purpose})});
+        if(currentJobId!==jobId)return;
+        applyJobState(result.job);pollTimer=setTimeout(()=>poll(jobId),1500);return;
+      }
       applyJobState(job);
       if (!['completed', 'failed'].includes(job.status)) {
         // awaiting_purpose는 사용자의 선택을 기다리는 정적 상태라 다시 폴링할 필요가 없다.
@@ -405,6 +413,15 @@
       if(err.status===404){
         missingCount++;
         if(missingCount>=6){
+          let saved;try{saved=JSON.parse(localStorage.getItem('sfas_recovery'));}catch{}
+          if(recoveryAttempts<1&&saved?.id===jobId&&saved.url&&Date.now()-saved.at<30*60*1000&&!['completed','failed'].includes(saved.status)){
+            recoveryAttempts++;
+            try{
+              const result=await api('/jobs',{method:'POST',body:JSON.stringify({url:saved.url,category:saved.category||'auto'})});
+              recoveryPurpose=saved.purpose;missingCount=0;persistJob(result.job.id,saved.url);
+              applyJobState(result.job);pollTimer=setTimeout(()=>poll(result.job.id),1500);return;
+            }catch{}
+          }
           missingJob=true;stopFakeProgress();stopPreviewCycle();
           setError(failedMessage,'서버에서 작업을 다시 찾지 못했어요. 상품 URL은 보관했어요. 다시 시도하면 같은 URL로 분석을 재시작합니다.');showView('failed');return;
         }
