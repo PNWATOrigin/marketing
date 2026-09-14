@@ -35,3 +35,11 @@ test('category findings and original selection reach the popup',()=>{
  assert.equal(result.requestedCategory,'digital');
  assert.equal(result.product.detectedCategory,'health');
 });
+
+test('nutrition foods join app health category without treating sugar claims as a category',()=>{
+ for(const name of ['제로핵 고단백 단백질 무당 그래놀라 2종','고단백 그래 놀라','무당 시리얼','단백질바','고단백 간식'])assert.equal(detectCategory({name}),'health');
+ assert.equal(detectCategory({name:'무당 저당 특가'}),null);
+ assert.equal(detectCategory({name:'단백질 샴푸'}),null);
+ assert.equal(detectCategory({name:'무선 청소기',description:'고단백 그래놀라 증정'}),'digital');
+ assert.equal(categoryStartError({category:'health',product:{name:'제로핵 고단백 단백질 무당 그래놀라 2종'}}),null);
+});
