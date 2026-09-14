@@ -56,6 +56,14 @@ async function isPhotographic(filePath) {
     const pixels = stdout;
     if (pixels.length < SIZE * SIZE * 3) return true; // 해상도가 예상과 다르면 분석을 건너뛰고 통과시킨다
 
+    return photoPixels(pixels);
+  } catch {
+    return true; // 분석에 실패하면 기존처럼 통과시켜 렌더링 자체는 막지 않는다.
+  }
+}
+
+function photoPixels(pixels){
+  const SIZE=96,GRID=24,BLOCK=4,MIN_COLORS_PER_BLOCK=10,MIN_PHOTO_AREA_RATIO=0.1;
     let photoBlocks = 0;
     for (let by = 0; by < GRID; by += 1) {
       for (let bx = 0; bx < GRID; bx += 1) {
@@ -72,9 +80,16 @@ async function isPhotographic(filePath) {
       }
     }
     return photoBlocks / (GRID * GRID) >= MIN_PHOTO_AREA_RATIO;
-  } catch {
-    return true; // 분석에 실패하면 기존처럼 통과시켜 렌더링 자체는 막지 않는다.
-  }
+}
+async function photographicSlices(paths){
+  if(!paths.length)return [];
+  const match=paths[0].match(/^(.*_slice)0\.jpg$/);
+  if(!match||paths.some((p,i)=>p!==`${match[1]}${i}.jpg`))return null;
+  try{
+    const {stdout}=await exec(config.ffmpegPath,['-v','error','-threads','1','-framerate','1','-start_number','0','-i',`${match[1]}%d.jpg`,'-vf','scale=96:96','-threads','1','-frames:v',String(paths.length),'-f','rawvideo','-pix_fmt','rgb24','-'],{timeout:Math.max(5000,paths.length*1000),encoding:'buffer',maxBuffer:paths.length*96*96*3+1024});
+    const bytes=96*96*3;if(stdout.length!==paths.length*bytes)return null;
+    return paths.map((_,i)=>photoPixels(stdout.subarray(i*bytes,(i+1)*bytes)));
+  }catch{return null;}
 }
 
 // 세로로 아주 긴 "상세페이지" 이미지를 균등한 여러 조각으로 잘라 각각을 독립된 이미지
@@ -162,8 +177,9 @@ async function downloadOne(url, destDir, index, { skipPhotoFilter = false, produ
       await fs.rm(filePath, { force: true });
       if (skipPhotoFilter) return slices;
       const photoSlices = [];
-      for (const slicePath of slices) {
-        if (await isPhotographic(slicePath)) photoSlices.push(slicePath);
+      const decisions=await photographicSlices(slices);
+      for (const [i,slicePath] of slices.entries()) {
+        if (decisions?decisions[i]:await isPhotographic(slicePath)) photoSlices.push(slicePath);
         else await fs.rm(slicePath, { force: true });
       }
       return photoSlices;
