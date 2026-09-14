@@ -8,16 +8,21 @@ export const ASSET_TYPES = ['PRODUCT_HERO','DETAIL','CLOSEUP','LIFESTYLE','USAGE
 const tokens = text => [...new Set(String(text).toLowerCase().match(/[가-힣a-z0-9]{2,}/g) || [])];
 const rules = [['BEFORE_AFTER',/before|after|전후|사용 전|사용 후/i],['USAGE',/사용법|작동|설치|섭취 방법|청소 방법/],['INFOGRAPHIC',/성분|함량|스펙|사양|영양정보/],['CLOSEUP',/디테일|확대|질감/],['LIFESTYLE',/생활|일상|주방|침실/],['FEATURE',/기능|특징/],['REVIEW',/구매평|리뷰/]];
 
+export function isTextPanel(text,width,height){
+ const lines=String(text||'').split(/\n/).map(t=>t.trim()).filter(t=>t.length>=3);
+ const count=String(text||'').replace(/\s/g,'').length;
+ return count>75||(lines.length>=5&&count>35)||(height>width*1.65&&count>35)||/영양정보|상품정보제공고시|교환.{0,8}반품|원재료명|섭취시주의사항|시험성적서/.test(String(text).replace(/\s/g,''));
+}
 export async function describeAssets(paths, product, onProgress=()=>{}) {
   const assets = [];
   // Bounded batches keep OCR and decoders within a small Render instance's memory.
   for (let i=0;i<paths.length;i++) {
     const file = paths[i], hash = digest(await fs.readFile(file));
-    const info = await cached('asset-analysis-v1', hash, async () => {
+    const info = await cached('asset-analysis-v2-photo-first', hash, async () => {
       const data = JSON.parse(await runFfprobe(['-v','error','-show_entries','stream=width,height,nb_frames:format=duration','-of','json',file]));
       const s = data.streams?.[0] || {};
       const text = await ocrImage(file, 6000);
-      const type = text.length > 350 ? 'TEXT_IMAGE' : rules.find(([,r])=>r.test(text))?.[0] || 'DETAIL';
+      const type = isTextPanel(text,s.width,s.height) ? 'TEXT_IMAGE' : rules.find(([,r])=>r.test(text))?.[0] || 'DETAIL';
       return { width:s.width, height:s.height, text, type, animated: Number(s.nb_frames)>1 || Number(data.format?.duration)>0.1 };
     });
     onProgress(i+1,paths.length);
@@ -25,7 +30,7 @@ export async function describeAssets(paths, product, onProgress=()=>{}) {
     const sourceIndex=Number(file.match(/img_(\d+)/)?.[1]);
     const alt=product.imageContext?.[product.images?.[sourceIndex]]||'';
     if (/19\s*금|성인\s*인증|미성년자|청소년.*이용불가|무이자|신용카드|카드\s*혜택|결제\s*안내|이모티콘|emoticon|emoji|adult.only/i.test(info.text+' '+alt)) continue;
-    const type = i===0 && info.type==='DETAIL' ? 'PRODUCT_HERO' : rules.find(([,r])=>r.test(alt))?.[0]||info.type;
+    const type = info.type==='TEXT_IMAGE'?'TEXT_IMAGE':/제품|상품|본품|패키지|product|hero/i.test(alt)&&info.type==='DETAIL'?'PRODUCT_HERO':rules.find(([,r])=>r.test(alt))?.[0]||info.type;
     assets.push({ id:hash, path:file, ...info, type, quality:Math.min(1,Math.min(info.width,info.height)/1000), visibility: type==='TEXT_IMAGE'?0.2:0.8, composition:Math.min(info.width,info.height)/Math.max(info.width,info.height), tags:tokens(info.text+' '+alt), provenance:'page-image+alt+local-ocr', productName:product.name });
   }
   return assets;
@@ -47,11 +52,11 @@ function choose(text, assets, used, previous, profile, closing=false) {
   const fresh=ranked.filter(a=>!used.has(a.asset.id));
   const different=pool.filter(a=>a.asset.id!==previous);
   const candidates=fresh.length?fresh:different.length?different:pool;
-  return candidates.map(({asset:a,semantic})=>({asset:a,semantic,score:semantic*.65+a.quality*.15+a.visibility*.1+a.composition*.05+(profile.preferred.includes(a.type)?.03:0)+(closing&&a.type==='PRODUCT_HERO'?.02:0)})).sort((a,b)=>b.score-a.score)[0];
+  return candidates.map(({asset:a,semantic})=>({asset:a,semantic,score:semantic*.30+(a.type==='PRODUCT_HERO'?.35:a.type==='CLOSEUP'?.25:a.type==='USAGE'?.18:0)+a.quality*.15+a.visibility*.1+a.composition*.05+(profile.preferred.includes(a.type)?.03:0)+(closing&&a.type==='PRODUCT_HERO'?.02:0)})).sort((a,b)=>b.score-a.score)[0];
 }
 
 export function makeStoryboard({ narration, assets, category, purpose, product }) {
-  const usable = assets.filter(a=>!['UNUSABLE','TEXT_IMAGE','REVIEW','LOGO'].includes(a.type));
+  const usable = assets.filter(a=>!['UNUSABLE','TEXT_IMAGE','REVIEW','LOGO','INFOGRAPHIC'].includes(a.type));
   if (!usable.length) throw new Error('제품을 확인할 수 있는 사진이 부족해요. 다른 상세페이지를 사용해주세요.');
   const style = styleFor(category,purpose), duration=narration.duration;
   const words = narration.words;
@@ -66,6 +71,8 @@ export function makeStoryboard({ narration, assets, category, purpose, product }
   }
   boundaries.push(duration);
   if(narration.sceneBoundaries)boundaries.splice(0,boundaries.length,...narration.sceneBoundaries);
+  // Keep at least five cuts in a 15 second video; never pad with text panels.
+  while(boundaries.length<6&&duration>=5){let at=0;for(let i=1;i<boundaries.length-1;i++)if(boundaries[i+1]-boundaries[i]>boundaries[at+1]-boundaries[at])at=i;boundaries.splice(at+1,0,(boundaries[at]+boundaries[at+1])/2);}
   const used=new Map(); let previous=null;
   const shots=boundaries.slice(0,-1).map((start,i)=>{
     const end=boundaries[i+1];
