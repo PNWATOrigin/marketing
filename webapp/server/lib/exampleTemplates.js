@@ -1,3 +1,4 @@
+import {simplifyCaptionProduct} from './captionText.js';
 import {filterBannedClaims} from './claimsGuard.js';
 export const EXAMPLE_TEMPLATES={
  views:{id:'example-1',captionY:760,fontSize:72,fontColor:'0x58352D',borderColor:'0x58352D',borderWidth:0,boxColor:'0xF7C7DC',closingColor:'0xFFF2CE',cuts:[0,2,5,8,12,15],preferred:['DETAIL','PRODUCT_HERO','CLOSEUP']},
@@ -17,5 +18,5 @@ export function generateExampleScript(product,purpose,category){
  purpose==='sales'?
  [['이건 어떻게 쓸까요?',name],['자세히 살펴보면',one],['이런 점을 확인해요',two],['사용 전 이것까지',facts[2]||'상세페이지에서 확인해요'],['구성까지 확인해봐요',clean(product.brand)||name]]:
  [['구매 전 확인할 2가지',name],['이유부터 살펴보면','선택 기준이 보여요'],['첫 번째, 이 부분',one],['두 번째는 이것',two],['두 가지 비교하고','내게 맞게 선택해요']];
- return {purpose,templateId:template.id,totalDuration:15,scenes:rows.map(([headline,sub],i)=>({key:template.id+'-'+i,start:template.cuts[i],end:template.cuts[i+1],duration:template.cuts[i+1]-template.cuts[i],headline,sub}))};
+ return {purpose,templateId:template.id,totalDuration:15,scenes:rows.map(([headline,sub],i)=>({key:template.id+'-'+i,start:template.cuts[i],end:template.cuts[i+1],duration:template.cuts[i+1]-template.cuts[i],headline:simplifyCaptionProduct(headline,product,category),sub:simplifyCaptionProduct(sub,product,category)}))};
 }

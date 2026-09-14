@@ -6,25 +6,7 @@ import { buildRenderPlan, buildNarrationPlan, RENDER_CONSTANTS } from './filterG
 import { runFfmpeg, runFfprobe, FfmpegError } from './ffmpegRunner.js';
 import { boingTrack, exportSources } from './editSources.js';
 
-// 글자 수로만 잘라 줄바꿈하면 단어 중간이 끊겨 읽기 불편하므로, 띄어쓰기(어절) 단위로
-// 줄바꿈한다. 내용이 잘리지 않도록 줄 수는 제한하지 않는다(자막 영역이 좁아 보통
-// 1~2줄에서 끝난다 - script.js가 애초에 문구 길이를 짧게 만들어둔다).
-function wrapCaption(text, maxCharsPerLine = 10) {
-  const words = String(text || '').split(/\s+/).filter(Boolean).flatMap(w=>{const a=[...w],parts=[];while(a.length)parts.push(a.splice(0,maxCharsPerLine).join(''));return parts;});
-  const lines = [];
-  let line = '';
-  for (const word of words) {
-    const next = line ? `${line} ${word}` : word;
-    if (line && [...next].length > maxCharsPerLine) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = next;
-    }
-  }
-  if (line) lines.push(line);
-  return lines.join('\n');
-}
+import {wrapCaption} from '../captionText.js';
 
 function pickSceneImages(scenes, imagePaths, gradientPath) {
   if (!imagePaths.length) throw new FfmpegError('상품 이미지를 가져오지 못했어요. 다른 상품 URL로 다시 시도해주세요.');
