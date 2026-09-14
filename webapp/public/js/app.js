@@ -245,17 +245,20 @@
 
   // ffmpeg 진행률(job.progress, 0~100)이 아직 도착하기 전이나 값이 멈춰있을 때를 대비해
   // 아주 천천히 올라가는 것처럼 보이게 하는 최소한의 보조 장치. 실제 값이 오면 바로 대체된다.
-  function startFakeRenderProgress() {
+  let progressTimerMode=null;
+  function startFakeRenderProgress(mode="scripting") {
+    if(progressTimerMode!==mode)stopFakeProgress();
+    progressTimerMode=mode;
     if (renderProgressTimer) return;
-    let value = STAGE_PROGRESS.scripting;
+    let value = mode==="queued"?1:STAGE_PROGRESS.scripting;
     const render = () => {
       progressFill.style.width = `${value}%`;
-      progressStageLabel.textContent = `${STAGE_LABELS.scripting} (${value}%)`;
+      progressStageLabel.textContent = `${mode==="queued"?"영상 제작 순서를 기다리는 중...":STAGE_LABELS.scripting} (${value.toFixed(1)}%)`;
       progressStageLabel.title = "대본 작성 단계의 예상 진행률입니다.";
     };
     render();
     renderProgressTimer = setInterval(() => {
-      value = Math.min(value + 1, 15);
+      value = mode==="queued" ? value+(4-value)*0.01 : Math.min(value+0.2,15);
       render();
     }, 1000);
   }
@@ -292,11 +295,9 @@
     switch (job.status) {
       case 'queued': {
         if(job.purpose){
-          stopFakeProgress();
           showView('progress');
           startPreviewCycle(job);
-          progressFill.style.width='1%';
-          progressStageLabel.textContent='영상 제작 순서를 기다리는 중...';
+          startFakeRenderProgress('queued');
         }else{
           stopPreviewCycle();showView('analyzing');
         }
