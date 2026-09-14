@@ -175,6 +175,22 @@
     pollTimer = null;
   }
 
+  let displayedPercent=0, percentTarget=0, percentTimer=null, percentLabel='', percentJob=null;
+  function animatePercent(value,label){
+    if(percentJob!==currentJobId){
+      clearInterval(percentTimer);percentTimer=null;displayedPercent=0;percentTarget=0;percentJob=currentJobId;
+    }
+    percentTarget=Math.max(percentTarget,Math.min(100,Math.floor(value)));
+    percentLabel=label;
+    const paint=()=>{progressFill.style.width=`${displayedPercent}%`;progressStageLabel.textContent=`${percentLabel} (${displayedPercent}%)`;};
+    paint();
+    if(percentTimer||displayedPercent>=percentTarget)return;
+    percentTimer=setInterval(()=>{
+      displayedPercent++;paint();
+      if(displayedPercent>=percentTarget){clearInterval(percentTimer);percentTimer=null;}
+    },140);
+  }
+
   function stopFakeProgress() {
     if (renderProgressTimer) clearInterval(renderProgressTimer);
     renderProgressTimer = null;
@@ -252,8 +268,7 @@
     if (renderProgressTimer) return;
     let value = mode==="queued"?1:STAGE_PROGRESS.scripting;
     const render = () => {
-      progressFill.style.width = `${value}%`;
-      progressStageLabel.textContent = `${mode==="queued"?"영상 제작 순서를 기다리는 중...":STAGE_LABELS.scripting} (${value.toFixed(1)}%)`;
+      animatePercent(value,mode==="queued"?"영상 제작 순서를 기다리는 중...":STAGE_LABELS.scripting);
       progressStageLabel.title = "대본 작성 단계의 예상 진행률입니다.";
     };
     render();
@@ -336,8 +351,7 @@
         if (typeof job.progress === 'number') {
           stopFakeProgress();
           const value = Math.min(100,Math.max(0,job.progress));
-          progressFill.style.width = `${value}%`;
-          progressStageLabel.textContent = `${({scripting:'대본을 작성하는 중...',downloading:'상품 이미지를 가져오는 중...',cutout:'사진을 준비하는 중...',matching:'문구에 맞는 사진을 찾는 중...','ai-video':'상품 사진을 AI 영상으로 만드는 중...',stickers:'스티커를 준비하는 중...',rendering:'영상을 제작하는 중...'})[job.stage]||renderingPhaseLabel(value)} (${value}%)`;
+          animatePercent(value,({scripting:'대본을 작성하는 중...',downloading:'상품 이미지를 가져오는 중...',cutout:'사진을 준비하는 중...',matching:'문구에 맞는 사진을 찾는 중...','ai-video':'상품 사진을 AI 영상으로 만드는 중...',stickers:'스티커를 준비하는 중...',rendering:'영상을 제작하는 중...'})[job.stage]||renderingPhaseLabel(value));
         } else {
           startFakeRenderProgress();
         }
