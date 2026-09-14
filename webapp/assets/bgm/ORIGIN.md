@@ -1,0 +1,1 @@
+loop-1.mp3 through loop-4.mp3 are original procedural instrumental loops generated for this project from sine-wave melody, bass and percussion. No external recordings, samples or paid API are used. They may be used in generated videos without additional music fees.

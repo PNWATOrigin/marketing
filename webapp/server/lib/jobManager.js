@@ -156,6 +156,7 @@ async function runRender(jobId) {
     const watchdog = startProgressWatchdog(jobId);
     try {
       if(!Number.isInteger(job.scriptVariant)){job.scriptVariant=nextScriptVariant(job.product);updateJob(jobId,{scriptVariant:job.scriptVariant});}
+      if(!Number.isInteger(job.mediaVariant)){job.mediaVariant=nextScriptVariant({name:'media:'+job.product.name},4);updateJob(jobId,{mediaVariant:job.mediaVariant});}
       const script=generateExampleScript(job.product,job.purpose,job.category,job.scriptVariant);
       const timing={duration:15,sceneBoundaries:[...script.scenes.map(s=>s.start),15],words:script.scenes.flatMap(s=>[
         {start:s.start,end:s.start+s.duration/2,text:s.headline},
@@ -191,6 +192,7 @@ async function runRender(jobId) {
         scenes: storyboard.shots,
         sourceData:{product:job.product,script,storyboard,category:job.category,purpose:job.purpose},
         style:storyboard.style,
+        mediaVariant:job.mediaVariant,
         imagePaths,
         outputPath,
         purpose: job.purpose,

@@ -13,11 +13,9 @@ function pickSceneImages(scenes, imagePaths, gradientPath) {
   return scenes.map((_, i) => imagePaths[i % imagePaths.length]);
 }
 
-// 목적(조회수/판매전환/브랜드인지도)마다 분위기가 다른 배경음악을 미리 만들어두고 골라 쓴다.
-// 매번 새로 생성하지 않아 빠르고, 외부 API 비용도 들지 않는다.
-const BGM_BY_PURPOSE = { views: 'views.mp3', sales: 'sales.mp3', brand: 'brand.mp3' };
-function pickBgm(purpose) {
-  return path.join(config.rootDir, 'assets', 'bgm', BGM_BY_PURPOSE[purpose] || 'sales.mp3');
+// Four bundled original loops rotate per product without external API calls.
+function pickBgm(variant=0) {
+  return path.join(config.rootDir, 'assets', 'bgm', `loop-${variant%4+1}.mp3`);
 }
 
 async function verifyOutput(outputPath, expectedDuration) {
@@ -54,8 +52,8 @@ async function verifyOutput(outputPath, expectedDuration) {
  * 이미지가 부족하면(0장 포함) 민트→화이트 그라데이션 배경으로 대체해서
  * 이미지 문제만으로 전체 렌더링이 실패하지 않게 한다.
  */
-export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, purpose, style, sourceData }) {
-  const fonts = resolveFonts();
+export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, purpose, style, sourceData, mediaVariant=0 }) {
+  const fonts = resolveFonts(mediaVariant);
   const gradientPath = null;
   const sceneImagePaths = pickSceneImages(scenes, imagePaths, gradientPath);
 
@@ -101,7 +99,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
     '-loglevel',
     'error',
     ...plan.inputArgs,
-    '-stream_loop','-1','-i',pickBgm(purpose),
+    '-stream_loop','-1','-i',pickBgm(mediaVariant),
     '-i',effects,
     '-filter_complex_threads', '1',
     '-filter_complex',
@@ -132,7 +130,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
   // onProgress(fraction)로 0~1 사이 실제 ffmpeg 진행률을 그대로 전달한다.
   try {
     await runFfmpeg(args, { timeoutMs: config.renderTimeoutMs, totalSeconds: plan.totalDuration, onProgress });
-    await exportSources({outputPath,sourceData,imagePaths,scenes:prepared.map((s,i)=>({...s,imagePath:style?s.imagePath:sceneImagePaths[i]})),cues,bgm:pickBgm(purpose),effects});
+    await exportSources({outputPath,sourceData,imagePaths,scenes:prepared.map((s,i)=>({...s,imagePath:style?s.imagePath:sceneImagePaths[i]})),cues,bgm:pickBgm(mediaVariant),effects});
   } finally {
     await fs.rm(textDir, { recursive: true, force: true });
   }

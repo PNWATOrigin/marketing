@@ -44,7 +44,7 @@ function choose(text, assets, used, previous, profile, closing=false) {
   // First restrict to relevant source regions; only then minimize repeated shots.
   const relevant=ranked.filter(a=>a.semantic>0);
   const pool=relevant.length?relevant:ranked;
-  const fresh=pool.filter(a=>!used.has(a.asset.id));
+  const fresh=ranked.filter(a=>!used.has(a.asset.id));
   const different=pool.filter(a=>a.asset.id!==previous);
   const candidates=fresh.length?fresh:different.length?different:pool;
   return candidates.map(({asset:a,semantic})=>({asset:a,semantic,score:semantic*.65+a.quality*.15+a.visibility*.1+a.composition*.05+(profile.preferred.includes(a.type)?.03:0)+(closing&&a.type==='PRODUCT_HERO'?.02:0)})).sort((a,b)=>b.score-a.score)[0];
