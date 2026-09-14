@@ -8,3 +8,4 @@ test('fresh product images are preferred even when one matches every cue',()=>{
  assert.equal(new Set(b.shots.map(s=>s.assetId)).size,5);
 });
 test('cute font variants resolve to different bundled fonts',()=>{assert.notEqual(resolveFonts(0).bold,resolveFonts(1).bold);});
+test('four caption fonts rotate for every example',()=>{for(const purpose of ['views','sales','brand']){assert.equal(new Set([0,1,2,3].map(v=>resolveFonts(v,purpose).bold)).size,4);assert.equal(resolveFonts(0,purpose).bold,resolveFonts(4,purpose).bold);}});

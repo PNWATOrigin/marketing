@@ -21,3 +21,4 @@ ENV PORT=3000
 EXPOSE 3000
 CMD ["node", "server/index.js"]
 RUN ffmpeg -v error -f lavfi -i color=s=320x240 -vf "drawtext=fontfile=/app/assets/fonts/Dongle-Bold.ttf:text='한글 자막':fontsize=100:borderw=6" -frames:v 1 -f null -
+RUN for font in Gaegu-Bold HiMelody-Regular; do ffmpeg -v error -f lavfi -i color=s=320x240 -vf "drawtext=fontfile=/app/assets/fonts/${font}.ttf:text='한글 자막':fontsize=100:borderw=6" -frames:v 1 -f null - || exit 1; done
