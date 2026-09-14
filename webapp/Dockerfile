@@ -14,6 +14,8 @@ RUN /opt/product-fetch/bin/python -c "from rembg import new_session; new_session
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY . .
+ # Validate the fallback with the exact Linux FFmpeg shipped in production.
+RUN ffmpeg -v error -f lavfi -i color=s=320x240 -vf "drawtext=fontfile=/app/assets/fonts/Jua-Regular.ttf:text='한글 자막':fontsize=100:borderw=6" -frames:v 1 -f null -
 
 ENV PORT=3000
 EXPOSE 3000

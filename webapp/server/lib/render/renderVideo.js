@@ -131,7 +131,16 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
 
   // onProgress(fraction)로 0~1 사이 실제 ffmpeg 진행률을 그대로 전달한다.
   try {
-    await runFfmpeg(args, { timeoutMs: config.renderTimeoutMs, totalSeconds: plan.totalDuration, onProgress });
+    try {
+      await runFfmpeg(args, { timeoutMs: config.renderTimeoutMs, totalSeconds: plan.totalDuration, onProgress });
+    } catch(err) {
+      if(!/Could not set tabsize|Could not load glyph|Could not load font|cannot open resource/i.test(err.message||''))throw err;
+      const fallback=resolveFonts(0);
+      if(fonts.bold===fallback.bold && fonts.regular===fallback.regular)throw err;
+      const retryPlan=style?buildNarrationPlan({scenes:prepared,fonts:fallback,style}):buildRenderPlan({scenes:prepared,sceneImagePaths,fonts:fallback});
+      const retryArgs=[...args];retryArgs[retryArgs.indexOf('-filter_complex')+1]=retryPlan.filterComplex+audioFilter;
+      await runFfmpeg(retryArgs,{timeoutMs:config.renderTimeoutMs,totalSeconds:plan.totalDuration,onProgress});
+    }
     await exportSources({outputPath,sourceData,imagePaths,scenes:prepared.map((s,i)=>({...s,imagePath:style?s.imagePath:sceneImagePaths[i]})),cues,bgm:pickBgm(mediaVariant),effects});
   } finally {
     await fs.rm(textDir, { recursive: true, force: true });
