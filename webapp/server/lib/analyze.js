@@ -137,9 +137,11 @@ function extractMeta($, baseUrl) {
 
   // 상세 설명 영역이 있으면 그 안의 이미지를 우선 쓰고(실제 상품 사진일 확률이 높음),
   // 부족하면 페이지 전체에서 아이콘/버튼류를 걸러낸 이미지로 보충한다.
+  const productScope = $('[class*="product-container"], [data-product-page]').filter((_,el)=>$(el).find('h1').length>0).first();
   const detailImages = collectImages($(DETAIL_CONTAINER_SELECTOR));
+  if (!detailImages.length && productScope.length) detailImages.push(...collectImages(productScope));
   const images = detailImages; 
-  return { name: title, description, images, detailImages };
+  return { name: title, description, images, detailImages, landingName:cleanText(productScope.find('h1').first().text(),80), landingDescription:cleanText(productScope.find('[class*="product-desc"]').first().text(),300), landingFeatures:productScope.find('[class*="card-title"]').toArray().map(el=>cleanText($(el).text(),60)).filter(Boolean).slice(0,5) };
 }
 
 // 허용된 범위(공개 텍스트) 내에서 핵심 특징 후보와 구매 유도 문구를 찾는다.
@@ -244,11 +246,11 @@ export function analyzeHtml(html, pageUrl) {
   const fromMeta = extractMeta($, pageUrl);
   const bodyHints = extractBodyHints($);
 
-  let name = fromJsonLd.name || fromOg.name || fromMeta.name || null;
+  let name = fromJsonLd.name || fromMeta.landingName || fromOg.name || fromMeta.name || null;
   const brand = fromJsonLd.brand || (ohou
     ? cleanText($('a[aria-label$="브랜드 페이지로 이동"]').first().text(), 40) || null
     : null);
-  const description = fromJsonLd.description || fromOg.description || fromMeta.description || null;
+  const description = fromJsonLd.description || fromMeta.landingDescription || fromOg.description || fromMeta.description || null;
   // 가격은 구조화 데이터(JSON-LD/OG)를 가장 신뢰하지만, 본문 텍스트에서 찾은 가격과
   // 크게 다르면 페이지 안에 서로 다른 가격 표기가 있다는 뜻이라 사용자에게 알려야 한다
   // (예: 정가/행사가 파싱 오류, 다른 옵션의 가격이 섞여 들어온 경우 등).
@@ -298,7 +300,7 @@ export function analyzeHtml(html, pageUrl) {
     /자동\s*먼지\s*비움/.test(name || '') ? '자동 먼지 비움' : null,
     (name || '').match(/먼지봉투\s*\d+장/)?.[0],
   ].filter(Boolean) : (jsonLdProduct?.additionalProperty || []).filter?.(p => p?.name && p?.value).map(p => cleanText(`${p.name}: ${p.value}`, 40)).slice(0,3) || [];
-  const { kept: features, removed: blockedClaims } = filterBannedClaims(rawFeatures);
+  const { kept: features, removed: blockedClaims } = filterBannedClaims(rawFeatures.length?rawFeatures:fromMeta.landingFeatures);
 
   const warnings = [];
   if (!name) warnings.push('상품명을 찾지 못했어요.');
