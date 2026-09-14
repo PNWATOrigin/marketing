@@ -264,6 +264,7 @@
     previewPanel.hidden = true;
   }
 
+  const categoryCheckedJobs = new Set();
   function applyJobState(job) {
     switch (job.status) {
       case 'queued':
@@ -273,6 +274,15 @@
         break;
       }
       case 'awaiting_purpose': {
+        const detected=job.product?.detectedCategory;
+        if(detected && detected!==job.category && !categoryCheckedJobs.has(job.id)) {
+          categoryCheckedJobs.add(job.id);
+          const names={digital:'디지털/가전',health:'건강기능식품'};
+          if(window.confirm(`이 상품은 ${names[detected]} 상품으로 보이는데, ${names[job.category]||'다른 카테고리'}을 선택하셨어요.\n카테고리를 다시 선택할까요?\n확인: 다시 선택 / 취소: 현재 선택 유지`)) {
+            clearJob(); showView('input'); return;
+          }
+        }
+
         stopFakeProgress();
         stopPreviewCycle();
         renderProductSummary(job.product);

@@ -1,3 +1,4 @@
+import { detectCategory } from './category.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { config } from '../config.js';
@@ -81,6 +82,7 @@ async function runAnalyze(jobId) {
       await enrichWithImageText(product,path.join(config.workDir,jobId,'ocr'));
       return product;
     },3600000);
+    product.detectedCategory=detectCategory(product);
     if(getJob(jobId)?.stage!=='cancelled')updateJob(jobId, { status: 'awaiting_purpose', stage: 'awaiting_purpose', product });
   } catch (err) {
     updateJob(jobId, { status: 'failed', stage: 'analyzing', error: friendlyError(err) });
