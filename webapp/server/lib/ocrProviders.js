@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { config } from '../config.js';
+import {cached,digest} from './cache.js';
 
 // OCR을 provider로 분리해서 나중에 외부 Vision OCR을 붙이더라도 호출 쪽
 // (jobManager.js)은 바꿀 필요가 없게 한다. 기본은 무료 로컬 OCR이고,
@@ -46,5 +47,12 @@ export async function ocrImage(imagePath, timeoutMs) {
       // 외부 provider 실패는 무시하고 로컬로 이어간다.
     }
   }
-  return localOcr(imagePath, timeoutMs);
+  const hash=digest(await fs.readFile(imagePath));
+  try {
+    return await cached('ocr-text-v1',hash,async()=>{
+      const text=await localOcr(imagePath,timeoutMs);
+      if(!text.trim())throw new Error('OCR_EMPTY');
+      return text;
+    },3600000);
+  } catch(err) {if(err.message==='OCR_EMPTY')return '';throw err;}
 }

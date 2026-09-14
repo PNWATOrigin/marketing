@@ -32,8 +32,13 @@
   }
 
   async function api(path, options = {}) {
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),30000);
+    try {
     const res = await fetch(`/api${path}`, {
       ...options,
+      signal:controller.signal,
+      cache:'no-store',
       headers: {
         'Content-Type': 'application/json',
         'X-Client-Id': clientId,
@@ -52,6 +57,7 @@
       throw err;
     }
     return data;
+    } finally {clearTimeout(timeout);}
   }
 
   // --- 화면 요소 ---

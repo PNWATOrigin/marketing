@@ -16,7 +16,10 @@ export function isTextPanel(text,width,height){
 export async function describeAssets(paths, product, onProgress=()=>{}) {
   const assets = [];
   // Bounded batches keep OCR and decoders within a small Render instance's memory.
-  for (let i=0;i<paths.length;i++) {
+  let next=0,done=0;
+  async function worker(){
+  while(next<paths.length){
+    const i=next++;
     const file = paths[i], hash = digest(await fs.readFile(file));
     const info = await cached('asset-analysis-v2-photo-first', hash, async () => {
       const data = JSON.parse(await runFfprobe(['-v','error','-show_entries','stream=width,height,nb_frames:format=duration','-of','json',file]));
@@ -25,16 +28,18 @@ export async function describeAssets(paths, product, onProgress=()=>{}) {
       const type = isTextPanel(text,s.width,s.height) ? 'TEXT_IMAGE' : rules.find(([,r])=>r.test(text))?.[0] || 'DETAIL';
       return { width:s.width, height:s.height, text, type, animated: Number(s.nb_frames)>1 || Number(data.format?.duration)>0.1 };
     });
-    onProgress(i+1,paths.length);
+    onProgress(++done,paths.length);
     if (!info.width || !info.height || info.width<300 || info.height<300) continue;
     const sourceIndex=Number(file.match(/img_(\d+)/)?.[1]);
     const alt=product.imageContext?.[product.images?.[sourceIndex]]||'';
     if (/19\s*금|성인\s*인증|미성년자|청소년.*이용불가|무이자|신용카드|카드\s*혜택|결제\s*안내|이모티콘|emoticon|emoji|adult.only/i.test(info.text+' '+alt)) continue;
     const confirmedHero=!file.includes('_slice')&&(product.heroImages||[]).includes(product.images?.[sourceIndex]);
     const type = confirmedHero&&info.text.replace(/\s/g,'').length<160?'PRODUCT_HERO':info.type==='TEXT_IMAGE'?'TEXT_IMAGE':/제품|상품|본품|패키지|product|hero/i.test(alt)&&info.type==='DETAIL'?'PRODUCT_HERO':rules.find(([,r])=>r.test(alt))?.[0]||info.type;
-    assets.push({ id:hash, path:file, ...info, type, quality:Math.min(1,Math.min(info.width,info.height)/1000), visibility: type==='TEXT_IMAGE'?0.2:0.8, composition:Math.min(info.width,info.height)/Math.max(info.width,info.height), tags:tokens(info.text+' '+alt), provenance:'page-image+alt+local-ocr', productName:product.name });
+    assets[i]=({ id:hash, path:file, ...info, type, quality:Math.min(1,Math.min(info.width,info.height)/1000), visibility: type==='TEXT_IMAGE'?0.2:0.8, composition:Math.min(info.width,info.height)/Math.max(info.width,info.height), tags:tokens(info.text+' '+alt), provenance:'page-image+alt+local-ocr', productName:product.name });
   }
-  return assets;
+  }
+  await Promise.all([worker(),worker()]);
+  return assets.filter(Boolean);
 }
 
 const CONCEPTS=[['memory',/기억|깜빡|인지|두뇌|뇌|집중/],['growth',/성장|키|어린이|아이|칼슘|뼈/],['immune',/면역|아연|방어/],['ingredients',/성분|함량|원료|배합/],['usage',/섭취|복용|하루|캡슐|먹는|사용법/],['cleaning',/청소|먼지|흡입|물걸레/]];
