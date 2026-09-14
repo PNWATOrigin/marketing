@@ -17,6 +17,10 @@ export function classifyCategory(product) {
   const fields=[product.description,(product.features||[]).join(' '),(product.detailLines||[]).join(' '),product.categoryText];
   let ds=0,hs=0;
   for(const field of fields){const t=norm(field);if(!t)continue;if(digital.test(t))ds+=2;if(electric.test(t))ds++;if(health.test(t)||nutritionFood.test(t))hs+=2;if(ingest.test(t))hs++;}
+  const evidence=norm([product.name,...fields].join(' '));
+  if(!td && /hsy2|키성장원료|성장기.{0,8}영양/.test(evidence) && /섭취|복용|젤리|구미|캡슐|분말|\d+포|젤리스틱/.test(evidence) && ds===0){
+    return {category:'health',confidence:'medium',reason:'growth-ingredient-and-ingestible-form'};
+  }
   const category=ds>=3&&ds-hs>=3?'digital':hs>=3&&hs-ds>=3?'health':null;
   return {category,confidence:category?'medium':'unknown',reason:category?'product-description-and-ocr':'insufficient-or-conflicting',scores:{digital:ds,health:hs}};
 }

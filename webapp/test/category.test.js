@@ -49,3 +49,10 @@ test('apple cider vinegar food titles join health but skincare does not',()=>{
  assert.equal(classifyCategory({name:'애사비 클렌징 토너'}).category,null);
  assert.equal(classifyCategory({name:'블러드오렌지 향수'}).category,null);
 });
+
+test('growth ingredients plus ingestible form establish health category',()=>{
+ assert.equal(classifyCategory({name:'[NEW] 에스클래스 그로우업 맥스 키성장 HSy2 28포(4주분)',description:'성장기 기초 영양 9중 복합 기능성 사과맛 젤리 스틱'}).category,'health');
+ assert.equal(classifyCategory({name:'키성장 운동 기구'}).category,null);
+ assert.equal(classifyCategory({name:'사과맛 젤리 스틱'}).category,null);
+ assert.equal(classifyCategory({name:'HSy2 크림'}).category,null);
+});
