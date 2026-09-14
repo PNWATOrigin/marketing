@@ -274,6 +274,7 @@
     previewPanel.hidden = true;
   }
 
+  const categoryNoticeJobs=new Set();
   function applyJobState(job) {
     switch (job.status) {
       case 'queued':
@@ -287,6 +288,12 @@
         if(!detected) {
           window.alert('상품 카테고리를 확실하게 확인하지 못했어요. 상품명과 상세 설명이 있는 개별 상품 URL을 입력해주세요.');
           clearJob(); showView('input'); return;
+        }
+        const requested=job.requestedCategory||job.category;
+        if(detected!==requested && !categoryNoticeJobs.has(job.id)) {
+          categoryNoticeJobs.add(job.id);
+          const labels={digital:'디지털/가전',health:'건강기능식품'};
+          window.alert(`선택한 카테고리와 상품 정보가 맞지 않는 것 같아요.\n선택한 카테고리: ${labels[requested]||requested}\n상품에서 확인한 카테고리: ${labels[detected]||detected}\n상품에 맞는 카테고리로 제작을 진행합니다.`);
         }
         stopFakeProgress();
         stopPreviewCycle();
