@@ -371,12 +371,14 @@
   }
 
   let pollVersion=0;
+  let missingCount=0, missingJob=false;
   async function poll(jobId) {
     const version=++pollVersion;
     stopPolling();
     try {
       const { job } = await api(`/jobs/${jobId}?t=${Date.now()}`);
       if(currentJobId!==jobId||version!==pollVersion)return;
+      missingCount=0; missingJob=false;
       applyJobState(job);
       if (!['completed', 'failed'].includes(job.status)) {
         // awaiting_purpose는 사용자의 선택을 기다리는 정적 상태라 다시 폴링할 필요가 없다.
@@ -386,7 +388,13 @@
       }
     } catch (err) {
       if(currentJobId!==jobId||version!==pollVersion)return;
-      if(err.status===404){clearJob();showView('input');setError(inputError,'이전 작업이 만료됐어요. URL로 다시 시작해주세요.');return;}
+      if(err.status===404){
+        missingCount++;
+        if(missingCount>=6){
+          missingJob=true;stopFakeProgress();stopPreviewCycle();
+          setError(failedMessage,'서버에서 작업을 다시 찾지 못했어요. 상품 URL은 보관했어요. 다시 시도하면 같은 URL로 분석을 재시작합니다.');showView('failed');return;
+        }
+      }
       console.error(err);
       pollTimer = setTimeout(() => poll(jobId), 3000);
     }
@@ -464,7 +472,10 @@
     if (!currentJobId) return;
     retryBtn.disabled = true;
     try {
-      const { job } = await api(`/jobs/${currentJobId}/retry`, { method: 'POST' });
+      const { job } = missingJob
+        ? await api('/jobs',{method:'POST',body:JSON.stringify({url:localStorage.getItem(STORAGE_KEYS.url)||urlInput.value,category:selectedCategory||'auto'})})
+        : await api(`/jobs/${currentJobId}/retry`, { method: 'POST' });
+      missingJob=false;missingCount=0;persistJob(job.id,null);
       if(Number.isInteger(job.mediaVariant)){try{localStorage.setItem('bgm-cycle-v1',String(job.mediaVariant));}catch{}}
       if(Number.isInteger(job.scriptVariant)){try{localStorage.setItem(captionHistoryKey,String(job.scriptVariant));}catch{}}
       applyJobState(job);
@@ -504,8 +515,8 @@
         applyJobState(job);
         if (!['completed', 'failed'].includes(job.status)) poll(savedJobId);
       } catch {
-        clearJob();
-        showView('input');
+        showView('analyzing');
+        poll(savedJobId);
       }
     } else {
       showView('input');
