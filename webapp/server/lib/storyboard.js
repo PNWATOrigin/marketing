@@ -30,7 +30,8 @@ export async function describeAssets(paths, product, onProgress=()=>{}) {
     const sourceIndex=Number(file.match(/img_(\d+)/)?.[1]);
     const alt=product.imageContext?.[product.images?.[sourceIndex]]||'';
     if (/19\s*금|성인\s*인증|미성년자|청소년.*이용불가|무이자|신용카드|카드\s*혜택|결제\s*안내|이모티콘|emoticon|emoji|adult.only/i.test(info.text+' '+alt)) continue;
-    const type = info.type==='TEXT_IMAGE'?'TEXT_IMAGE':/제품|상품|본품|패키지|product|hero/i.test(alt)&&info.type==='DETAIL'?'PRODUCT_HERO':rules.find(([,r])=>r.test(alt))?.[0]||info.type;
+    const confirmedHero=!file.includes('_slice')&&(product.heroImages||[]).includes(product.images?.[sourceIndex]);
+    const type = confirmedHero&&info.text.replace(/\s/g,'').length<160?'PRODUCT_HERO':info.type==='TEXT_IMAGE'?'TEXT_IMAGE':/제품|상품|본품|패키지|product|hero/i.test(alt)&&info.type==='DETAIL'?'PRODUCT_HERO':rules.find(([,r])=>r.test(alt))?.[0]||info.type;
     assets.push({ id:hash, path:file, ...info, type, quality:Math.min(1,Math.min(info.width,info.height)/1000), visibility: type==='TEXT_IMAGE'?0.2:0.8, composition:Math.min(info.width,info.height)/Math.max(info.width,info.height), tags:tokens(info.text+' '+alt), provenance:'page-image+alt+local-ocr', productName:product.name });
   }
   return assets;

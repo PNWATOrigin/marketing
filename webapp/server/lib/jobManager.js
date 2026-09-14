@@ -80,7 +80,7 @@ async function runAnalyze(jobId) {
   if (!job || job.stage==='cancelled') return;
   updateJob(jobId, { status: 'analyzing', stage: 'analyzing', error: null });
   try {
-    const product = await cached('products-detail-v6',job.url,async()=>{
+    const product = await cached('products-detail-v7',job.url,async()=>{
       const {html,finalUrl}=await fetchProductPage(job.url);
       const product=analyzeHtml(html,finalUrl);
       await enrichWithImageText(product,path.join(config.workDir,jobId,'ocr'));
@@ -167,6 +167,7 @@ async function runRender(jobId) {
       // 이미지 다운로드(0~10%)와 ffmpeg 인코딩(10~100%)을 하나의 진행률로 이어붙인다.
       let imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
         max: job.product.images.length,
+        heroImages:job.product.heroImages||[],
         onEach: (done, total) => watchdog.report(total ? 5+Math.round((done / total) * 15) : 0),
       });
       if(!imagePaths.length)throw new Error('사용할 수 있는 상품 사진을 찾지 못했어요.');

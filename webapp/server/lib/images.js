@@ -131,7 +131,7 @@ function withDeadline(promise, ms) {
 // skipPhotoFilter: OCR처럼 "글자 위주 이미지"를 오히려 읽고 싶은 용도로 쓸 때는
 // 사진다움 검사를 건너뛴다. 아이콘/구분선 제외와 긴 이미지 분할은 OCR에도 그대로
 // 도움이 되므로 계속 적용한다.
-async function downloadOne(url, destDir, index, { skipPhotoFilter = false } = {}) {
+async function downloadOne(url, destDir, index, { skipPhotoFilter = false, productHero = false } = {}) {
   try {
     const res = await withDeadline(
       safeFetch(url, {
@@ -166,7 +166,7 @@ async function downloadOne(url, destDir, index, { skipPhotoFilter = false } = {}
       }
       return photoSlices;
     }
-    if (!skipPhotoFilter && !(await isPhotographic(filePath))) {
+    if (!skipPhotoFilter && !productHero && !(await isPhotographic(filePath))) {
       await fs.rm(filePath, { force: true });
       return [];
     }
@@ -181,14 +181,14 @@ async function downloadOne(url, destDir, index, { skipPhotoFilter = false } = {}
  * 하나가 실패해도(타임아웃, 404, 용량 초과, SSRF 차단 등) 나머지로 계속 진행하고
  * 성공한 로컬 파일 경로만 반환한다 - 전체 작업이 이미지 하나 때문에 느려지거나 실패하지 않게 한다.
  */
-export async function downloadImages(urls, destDir, { max = config.maxImages, onEach, skipPhotoFilter = false } = {}) {
+export async function downloadImages(urls, destDir, { max = config.maxImages, onEach, skipPhotoFilter = false, heroImages=[] } = {}) {
   await fs.mkdir(destDir, { recursive: true });
   const targets = urls.slice(0, max); // 순차 재시도가 없으니 후보를 과하게 늘릴 필요가 없다
 
   let done = 0;
   const results = await Promise.all(
     targets.map(async (url, i) => {
-      const result = await downloadOne(url, destDir, i, { skipPhotoFilter });
+      const result = await downloadOne(url, destDir, i, { skipPhotoFilter, productHero:heroImages.includes(url) });
       done += 1;
       onEach?.(done, targets.length);
       return result;

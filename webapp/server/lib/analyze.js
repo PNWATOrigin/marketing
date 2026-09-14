@@ -234,6 +234,11 @@ function scanEmbeddedState(state) {
  */
 export function analyzeHtml(html, pageUrl) {
   const $ = cheerio.load(html);
+  // Some shops keep their product description as escaped HTML in a textarea.
+  $('textarea#item_content_textarea, textarea[name="product_detail"], textarea#product_description').each((_,el)=>{
+    const fragment=cheerio.load($(el).text());fragment('script,style,iframe,form').remove();
+    $('body').append('<section class="product-desc extracted-description">'+fragment('body').html()+'</section>');
+  });
   const ohou = new URL(pageUrl).hostname === 'store.ohou.se';
   const jsonLdNodes = collectJsonLd($);
   const jsonLdProduct = pickJsonLdProduct(jsonLdNodes);
@@ -276,6 +281,12 @@ export function analyzeHtml(html, pageUrl) {
   if (['nutridday.com','www.nutridday.com'].includes(new URL(pageUrl).hostname)) {
     images=dedupeImages($('#prdDetail .cont img').toArray().map(el=>toAbsoluteUrl(pageUrl,$(el).attr('ec-data-src')||$(el).attr('data-src')||$(el).attr('src'))).filter(u=>u&&!/banner|delivery/i.test(u)),16);
   }
+  let heroImages=[];
+  if(['www.nutrione.co.kr','nutrione.co.kr'].includes(new URL(pageUrl).hostname)){
+    const itemId=new URL(pageUrl).pathname.match(/\/item\/dtl\/(\d+)/)?.[1];
+    heroImages=dedupeImages($('.thumb-wrap img').toArray().map(el=>toAbsoluteUrl(pageUrl,$(el).attr('src'))).filter(u=>u&&itemId&&u.includes('/upload/item/'+itemId+'/')),8);
+    images=dedupeImages([...heroImages,...fromMeta.detailImages],24);
+  }
   images=images.filter(u=>!SKIP_IMAGE_PATTERN.test(u));
   const detailOnly=['nutrime.co.kr','www.nutrime.co.kr','nutridday.com','www.nutridday.com'].includes(new URL(pageUrl).hostname);
   if(['nutrime.co.kr','www.nutrime.co.kr'].includes(new URL(pageUrl).hostname)) images=dedupeImages($('#strict-product-detail img[src*="/data/editor/goods/"]').toArray().map(el=>toAbsoluteUrl(pageUrl,$(el).attr('src'))),16);
@@ -311,6 +322,7 @@ export function analyzeHtml(html, pageUrl) {
 
   return {
     sourceUrl: pageUrl,
+    heroImages,
     detailOnly,
     preferDetail:fromMeta.detailImages.length>0 || detailOnly,
     name,
