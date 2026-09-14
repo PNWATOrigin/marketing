@@ -21,17 +21,25 @@ export const HOOK_SCRIPTS = [
 ];
 export function generateExampleScript(product,purpose,category,variant=0){
  const template=EXAMPLE_TEMPLATES[purpose];if(!template)throw new Error('콘텐츠 예시를 선택해주세요.');
- const name=captionProductName(product,category);
- const raw=product.detailOnly?(product.detailLines||[]):[...(product.features||[]),...(product.detailLines||[])];
- const facts=[...new Set(filterBannedClaims(raw.map(clean).filter(Boolean)).kept)]
-  .filter(t=>!(/배송|고객센터|무이자|카드혜택|교환|반품|로그인|copyright|https?:|쿠폰|개인정보|사업자|장바구니/i.test(t)))
-  .map(t=>simplifyCaptionProduct(t,product,category))
-  .filter(t=>t.length>=4&&[...t].length<=28&&/[가-힣a-z]/i.test(t)&&!/[{}<>]/.test(t)).slice(0,10);
- // Keep short, complete source phrases. Never clip an OCR sentence mid-word.
- const checks=category==='health'?['원료와 함량을 확인해요','섭취 방법을 확인해요','주의사항도 읽어보세요']:['기능과 사양을 확인해요','사용 환경을 확인해요','구성품도 살펴보세요'];
+ const evidence=[product.description,...(product.features||[]),...(product.detailLines||[])].map(clean).filter(t=>! /추천상품|관련상품|다른상품/.test(t)).join(' ');
+ const rules=category==='health'?
+ [[/함량|성분|원료/,'원료와 함량'],[/섭취|복용|하루/,'섭취 방법'],[/주의|알레르기/,'주의사항'],[/캡슐|정제|젤리|분말/,'섭취 형태']]:
+ [[/물걸레/,'물걸레 청소'],[/흡입|먼지/,'먼지 청소'],[/문턱|카펫/,'바닥 환경'],[/세척|자동.*비움/,'사용 후 관리'],[/배터리|충전/,'충전 방식'],[/소음/,'작동 소음'],[/크기|공간|cm/,'설치 공간']];
+ const topics=rules.filter(([re])=>re.test(evidence)).map(([,topic])=>topic);
+ if(!topics.length)topics.push(category==='health'?'섭취 전 확인':'사용 전 확인');
  const index=((Number(variant)||0)%10+10)%10;
- const copy=HOOK_SCRIPTS[index];
- const ordered=facts.length?facts.slice(index%facts.length).concat(facts.slice(0,index%facts.length)):[];
- const rows=copy.map((line,i)=>[line,i===0?name:i===4?(purpose==='sales'?'구매 전 상세정보 확인':purpose==='brand'?clean(product.brand)||name:'필요할 때 다시 봐요'):ordered[i-1]||checks[i-1]]);
- return {purpose,scriptVariant:index,templateId:template.id,totalDuration:15,scenes:rows.map(([headline,sub],i)=>({key:template.id+'-'+i,start:template.cuts[i],end:template.cuts[i+1],duration:template.cuts[i+1]-template.cuts[i],headline:simplifyCaptionProduct(headline,product,category),sub:simplifyCaptionProduct(sub,product,category)}))};
+ const prompts=[
+ ['놓치고 있나요?','꼼꼼히 봤나요?','내게 맞을까요?','선택 전에 체크!','이제 비교해봐요'],
+ ['먼저 따져봐요','차이를 살펴봐요','한 번 더 확인!','기준을 세워봐요','저장해 두세요'],
+ ['무엇을 볼까요?','그냥 넘겼나요?','비교해 보셨나요?','핵심부터 봐요','확인하고 골라요'],
+ ['궁금하지 않나요?','어떻게 다를까요?','조건부터 확인!','나에게 필요한가요?','결정 전에 봐요'],
+ ['자세히 보세요','선택의 기준은?','이 부분 봤나요?','설명부터 읽어요','비교 목록에 쏙!'],
+ ['고민되는 부분은?','어디까지 봤나요?','기준에 맞나요?','꼭 확인해봐요','다시 볼 땐 저장'],
+ ['빼먹지 마세요','알고 고르세요','먼저 살펴봐요','차근차근 비교!','확인부터 해봐요'],
+ ['15초만 살펴봐요','중요하게 보나요?','놓치기 쉬워요','조건과 맞춰봐요','체크하고 선택!'],
+ ['생각해 보셨나요?','꼭 읽어볼 부분!','내 기준은 뭔가요?','이제 따져봐요','필요할 때 꺼내봐요'],
+ ['비교할 준비됐나요?','어떤 점을 볼까요?','상세정보로 확인!','마지막으로 점검!','꼼꼼히 선택해요']
+ ][index];
+ const rows=prompts.map((line,i)=>[i===0?HOOK_SCRIPTS[index][0]:topics[(index+i)%topics.length],line]);
+ return {purpose,scriptVariant:index,templateId:template.id,totalDuration:15,scenes:rows.map(([headline,sub],i)=>({key:template.id+'-'+i,start:template.cuts[i],end:template.cuts[i+1],duration:template.cuts[i+1]-template.cuts[i],headline,sub}))};
 }

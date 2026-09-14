@@ -158,6 +158,7 @@
   let purposes = [];
   let selectedPurpose = null;
   let currentJobId = null;
+  let captionHistoryKey='caption-hook-v2';
   let pollTimer = null;
   let renderProgressTimer = null;
   let previewTimer = null;
@@ -281,6 +282,7 @@
 
   const categoryNoticeJobs=new Set();
   function applyJobState(job) {
+    if(job.product)captionHistoryKey='caption-hook-v2:'+String(job.product.displayName||job.product.name||job.url);
     switch (job.status) {
       case 'queued':
       case 'analyzing': {
@@ -414,10 +416,12 @@
     if (!selectedPurpose || !currentJobId) return;
     startRenderBtn.disabled = true;
     try {
+      let scriptVariant;try{const last=localStorage.getItem(captionHistoryKey);scriptVariant=last===null?Math.floor(Math.random()*10):(Number(last)+1)%10;}catch{}
       const { job } = await api(`/jobs/${currentJobId}/start`, {
         method: 'POST',
-        body: JSON.stringify({ purpose: selectedPurpose }),
+        body: JSON.stringify({ purpose: selectedPurpose, scriptVariant }),
       });
+      if(Number.isInteger(job.scriptVariant)){try{localStorage.setItem(captionHistoryKey,String(job.scriptVariant));}catch{}}
       applyJobState(job);
       poll(currentJobId);
     } catch (err) {
@@ -431,6 +435,7 @@
     retryBtn.disabled = true;
     try {
       const { job } = await api(`/jobs/${currentJobId}/retry`, { method: 'POST' });
+      if(Number.isInteger(job.scriptVariant)){try{localStorage.setItem(captionHistoryKey,String(job.scriptVariant));}catch{}}
       applyJobState(job);
       poll(currentJobId);
     } catch (err) {

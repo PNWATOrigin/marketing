@@ -225,7 +225,7 @@ async function runRender(jobId) {
   }
 }
 
-export function startJob(jobId, purposeId) {
+export function startJob(jobId, purposeId, scriptVariant) {
   const job = getJob(jobId);
   if (!job) return { ok: false, error: '작업을 찾을 수 없어요.' };
   if (!PURPOSES[purposeId]) return { ok: false, error: '알 수 없는 목적이에요.' };
@@ -238,7 +238,7 @@ export function startJob(jobId, purposeId) {
   if(aiVideoEnabled()&&!aiVideoConfigured())return {ok:false,error:'AI 영상 API 키가 설정되지 않았어요.'};
   const categoryError=categoryStartError(job);
   if(categoryError)return {ok:false,error:categoryError};
-  const patch = { ...categoryPatch(job), purpose: purposeId, status: 'queued', stage: 'queued' };
+  const patch = { ...categoryPatch(job), ...(Number.isInteger(scriptVariant)&&scriptVariant>=0&&scriptVariant<10?{scriptVariant}:{}), purpose: purposeId, status: 'queued', stage: 'queued' };
   const updated = updateJob(jobId, patch);
   enqueueRender(jobId);
   return { ok: true, job: updated };

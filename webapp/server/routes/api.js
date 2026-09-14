@@ -138,7 +138,7 @@ router.post(
       return res.status(403).json({ error: '이 작업에 접근할 수 없어요.' });
     }
     const { purpose } = req.body || {};
-    const result = startJob(req.params.id, purpose);
+    const result = startJob(req.params.id, purpose, req.body?.scriptVariant);
     if (!result.ok) return res.status(400).json({ error: result.error });
     res.json({ job: toPublicJob(result.job) });
   })

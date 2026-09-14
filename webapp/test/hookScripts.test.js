@@ -11,11 +11,18 @@ test('ten distinct hooks retain all three 15 second formats',()=>{
  for(const purpose of ['views','sales','brand']){
  const scripts=Array.from({length:10},(_,i)=>generateExampleScript({name:'트리플콜라겐 오렌지 24주 (9+3박스)',features:['로그인 후 쿠폰 받기','이 문장은 너무 길어서 화면에 전부 표시하기 어렵기 때문에 중간에서 자르면 안 됩니다','콜라겐 함량 확인']},purpose,'health',i));
  assert.equal(new Set(scripts.map(s=>s.scenes[0].headline)).size,10);
- for(const s of scripts){assert.equal(s.scenes.reduce((n,v)=>n+v.duration,0),15);assert.equal(s.scenes[0].sub,'콜라겐');assert.ok(!JSON.stringify(s).includes('쿠폰'));assert.ok(!JSON.stringify(s).includes('중간에서'));}
+ for(const s of scripts){assert.equal(s.scenes.reduce((n,v)=>n+v.duration,0),15);assert.ok(!JSON.stringify(s).includes('트리플콜라겐'));assert.ok(!s.scenes.some(v=>v.sub==='콜라겐'));assert.ok(!JSON.stringify(s).includes('쿠폰'));assert.ok(!JSON.stringify(s).includes('중간에서'));}
  }
 });
 test('same product cycles through ten before repeating, persisted on disk',()=>{
  const old=config.dataDir;const dir=fs.mkdtempSync(path.join(os.tmpdir(),'hooks-'));config.dataDir=dir;
  try{const ids=Array.from({length:11},()=>nextScriptVariant({name:'검증 상품'}));assert.equal(new Set(ids.slice(0,10)).size,10);assert.equal(ids[0],ids[10]);assert.ok(fs.existsSync(path.join(dir,'script-rotation.json')));}
  finally{config.dataDir=old;fs.rmSync(dir,{recursive:true,force:true});}
+});
+
+test('hooks follow page topics without reproducing product or brand names',()=>{
+ const p={name:'로보락 S10 MaxV Ultra',brand:'로보락',features:['물걸레 청소 시스템','강력한 흡입력','높은 문턱 통과']};
+ const outputs=Array.from({length:10},(_,i)=>generateExampleScript(p,'views','digital',i));
+ assert.equal(new Set(outputs.map(JSON.stringify)).size,10);
+ for(const s of outputs){const text=JSON.stringify(s.scenes);assert.ok(!text.includes('로보락'));assert.ok(/물걸레|먼지|바닥/.test(text));}
 });

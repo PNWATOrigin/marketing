@@ -73,8 +73,8 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
         const text=group.map(c=>c.text).join(' ');
         const lines=wrapCaption(text,10).split('\n');
         const start=Math.max(0,group[0].start-scene.start),end=Math.min(scene.duration,group.at(-1).end-scene.start);
-        for(let n=0;n<lines.length;n+=2){
-          const chunk=lines.slice(n,n+2).join('\n'),count=Math.ceil(lines.length/2),part=n/2;
+        for(let n=0;n<lines.length;n++){
+          const chunk=lines[n],count=lines.length,part=n;
           const file=path.join(textDir,`${i}-cue-${captionFiles.length}.txt`);
           await fs.writeFile(file,chunk,'utf8');
           captionFiles.push({path:file,text:chunk,start:start+(end-start)*part/count,end:start+(end-start)*(part+1)/count});
