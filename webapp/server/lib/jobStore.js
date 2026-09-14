@@ -93,6 +93,7 @@ export function toPublicJob(job) {
     requestedCategory: job.requestedCategory || job.category,
     purpose: job.purpose,
       scriptVariant:job.scriptVariant,
+      mediaVariant:job.mediaVariant,
     product: job.product
       ? {
           name: job.category === 'health' ? '영양제' : job.product.name,

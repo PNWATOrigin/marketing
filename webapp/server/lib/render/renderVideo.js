@@ -6,7 +6,7 @@ import { buildRenderPlan, buildNarrationPlan, RENDER_CONSTANTS } from './filterG
 import { runFfmpeg, runFfprobe, FfmpegError } from './ffmpegRunner.js';
 import { boingTrack, exportSources } from './editSources.js';
 
-import {wrapCaption} from '../captionText.js';
+import {wrapCaption,splitBreathCaptions} from '../captionText.js';
 
 function pickSceneImages(scenes, imagePaths, gradientPath) {
   if (!imagePaths.length) throw new FfmpegError('상품 이미지를 가져오지 못했어요. 다른 상품 URL로 다시 시도해주세요.');
@@ -71,13 +71,15 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
       const flush=async()=>{
         if(!group.length)return;
         const text=group.map(c=>c.text).join(' ');
-        const lines=wrapCaption(text,10).split('\n');
+        const lines=splitBreathCaptions(text,10);
         const start=Math.max(0,group[0].start-scene.start),end=Math.min(scene.duration,group.at(-1).end-scene.start);
+        const weights=lines.map(line=>[...line.replace(/\s/g,'')].length+2);const totalWeight=weights.reduce((a,b)=>a+b,0);let elapsed=0;
         for(let n=0;n<lines.length;n++){
           const chunk=lines[n],count=lines.length,part=n;
           const file=path.join(textDir,`${i}-cue-${captionFiles.length}.txt`);
           await fs.writeFile(file,chunk,'utf8');
-          captionFiles.push({path:file,text:chunk,start:start+(end-start)*part/count,end:start+(end-start)*(part+1)/count});
+          captionFiles.push({path:file,text:chunk,start:start+(end-start)*elapsed/totalWeight,end:start+(end-start)*(elapsed+weights[n])/totalWeight});
+          elapsed+=weights[n];
         }
         group=[];
       };

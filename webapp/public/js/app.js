@@ -416,11 +416,13 @@
     if (!selectedPurpose || !currentJobId) return;
     startRenderBtn.disabled = true;
     try {
+      let mediaVariant;try{const last=localStorage.getItem('bgm-cycle-v1');mediaVariant=last===null?0:(Number(last)+1)%4;}catch{}
       let scriptVariant;try{const last=localStorage.getItem(captionHistoryKey);scriptVariant=last===null?Math.floor(Math.random()*10):(Number(last)+1)%10;}catch{}
       const { job } = await api(`/jobs/${currentJobId}/start`, {
         method: 'POST',
-        body: JSON.stringify({ purpose: selectedPurpose, scriptVariant }),
+        body: JSON.stringify({ purpose: selectedPurpose, scriptVariant, mediaVariant }),
       });
+      if(Number.isInteger(job.mediaVariant)){try{localStorage.setItem('bgm-cycle-v1',String(job.mediaVariant));}catch{}}
       if(Number.isInteger(job.scriptVariant)){try{localStorage.setItem(captionHistoryKey,String(job.scriptVariant));}catch{}}
       applyJobState(job);
       poll(currentJobId);
@@ -435,6 +437,7 @@
     retryBtn.disabled = true;
     try {
       const { job } = await api(`/jobs/${currentJobId}/retry`, { method: 'POST' });
+      if(Number.isInteger(job.mediaVariant)){try{localStorage.setItem('bgm-cycle-v1',String(job.mediaVariant));}catch{}}
       if(Number.isInteger(job.scriptVariant)){try{localStorage.setItem(captionHistoryKey,String(job.scriptVariant));}catch{}}
       applyJobState(job);
       poll(currentJobId);
