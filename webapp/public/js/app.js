@@ -65,6 +65,7 @@
   };
 
   function showView(name) {
+    if(name!=='purpose')document.querySelectorAll('.example-video').forEach(v=>{v.pause();v.currentTime=0;});
     Object.entries(views).forEach(([key, el]) => {
       el.hidden = key !== name;
     });
@@ -204,29 +205,33 @@
   }
 
   function renderPurposeCards() {
-    purposeGrid.innerHTML = purposes
-      .map(
-        (p) => `
-        <button type="button" class="purpose-card" data-id="${p.id}" aria-pressed="false">
-          <span class="check">✓</span>
-          <img class="purpose-card-img" src="/img/card-${p.id}.png" alt="${escapeHtml(p.label)}" />
-          <span class="purpose-card-compact"><span class="badge-icon">✦</span>${escapeHtml(p.label)}</span>
-        </button>`
-      )
-      .join('');
-
-    const cards = [...purposeGrid.querySelectorAll('.purpose-card')];
-    cards.forEach((card, i) => {
-      setTimeout(() => card.classList.add('show'), i * 90);
-      card.addEventListener('click', () => {
-        cards.forEach((c) => {
-          c.classList.remove('selected');
-          c.setAttribute('aria-pressed', 'false');
-        });
-        card.classList.add('selected');
-        card.setAttribute('aria-pressed', 'true');
-        selectedPurpose = card.dataset.id;
-        startRenderBtn.disabled = false;
+    const examples=[{id:'views',number:1},{id:'sales',number:2},{id:'brand',number:3}];
+    selectedPurpose=null;
+    startRenderBtn.disabled=true;
+    purposeGrid.innerHTML=examples.map(p=>`
+      <button type="button" class="purpose-card example-card show" data-id="${p.id}" aria-label="콘텐츠 예시 ${p.number} 선택" aria-pressed="false">
+        <span class="check" aria-hidden="true">✓</span>
+        <video class="example-video" muted playsinline loop preload="none" poster="/examples/example-${p.number}.jpg" data-src="/examples/example-${p.number}.mp4" aria-hidden="true"></video>
+        <span class="example-label">콘텐츠 예시 ${p.number}</span>
+      </button>`).join('');
+    const cards=[...purposeGrid.querySelectorAll('.example-card')];
+    const stop=card=>{const v=card.querySelector('video');v.pause();v.currentTime=0;};
+    const play=card=>{
+      cards.filter(c=>c!==card).forEach(stop);
+      const v=card.querySelector('video');
+      if(!v.getAttribute('src'))v.src=v.dataset.src;
+      v.muted=true;v.play().catch(()=>{});
+    };
+    cards.forEach(card=>{
+      card.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')play(card);});
+      card.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')stop(card);});
+      card.addEventListener('focus',()=>play(card));
+      card.addEventListener('blur',()=>stop(card));
+      card.addEventListener('click',()=>{
+        cards.forEach(c=>{c.classList.toggle('selected',c===card);c.setAttribute('aria-pressed',String(c===card));});
+        selectedPurpose=card.dataset.id;
+        startRenderBtn.disabled=false;
+        play(card);
       });
     });
   }

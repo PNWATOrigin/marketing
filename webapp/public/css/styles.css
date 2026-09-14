@@ -796,3 +796,13 @@ body {
 .progress-fill::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent); transform:translateX(-100%); animation:processing-light 1.8s linear infinite; }
 @keyframes processing-light { to { transform:translateX(100%); } }
 @media (prefers-reduced-motion:reduce) { .progress-fill::after { animation:none; } }
+
+/* Video examples remain visible on both desktop and touch screens. */
+.purpose-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.example-card { min-width:0; overflow:hidden; background:#eff8ff; border:2px solid #9ad8ff; border-radius:18px; }
+.example-video { display:block; width:100%; aspect-ratio:9/16; object-fit:contain; background:#172031; pointer-events:none; }
+.example-label { display:block; padding:10px 3px; color:#7c3aed; font-weight:800; font-size:14px; }
+.example-card .check { z-index:2; }
+.example-card.selected { border-color:#ef4db8; box-shadow:0 0 0 3px #ef4db8; }
+.example-card:focus-visible { outline:3px solid #7c3aed; outline-offset:4px; }
+@media(max-width:559px) { .purpose-grid{gap:8px;} .example-card{border-radius:12px;} .example-label{font-size:11px;padding:8px 2px;} }
