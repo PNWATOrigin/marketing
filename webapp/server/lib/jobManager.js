@@ -1,4 +1,4 @@
-import { detectCategory } from './category.js';
+import { classifyCategory } from './category.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { config } from '../config.js';
@@ -58,6 +58,7 @@ async function enrichWithImageText(product, workDir) {
     for (const p of imagePaths) {
       texts.push(await ocrImage(p, config.ocrTimeoutMs));
     }
+    product.categoryText=texts.join('\n').slice(0,16000);
     if(product.detailOnly)product.detailLines=texts.flatMap(t=>t.split('\n').flatMap(line=>extractCleanLines(line,1).lines)).filter((x,i,a)=>a.indexOf(x)===i).slice(0,40);
     const { lines, blockedCount } = extractCleanLines(texts.join('\n'), 4 - (product.features?.length || 0));
     if (lines.length) product.features = [...(product.features || []), ...lines].slice(0, 4);
@@ -76,13 +77,14 @@ async function runAnalyze(jobId) {
   if (!job) return;
   updateJob(jobId, { status: 'analyzing', stage: 'analyzing', error: null });
   try {
-    const product = await cached('products-detail-v5',job.url,async()=>{
+    const product = await cached('products-detail-v6',job.url,async()=>{
       const {html,finalUrl}=await fetchProductPage(job.url);
       const product=analyzeHtml(html,finalUrl);
       await enrichWithImageText(product,path.join(config.workDir,jobId,'ocr'));
       return product;
     },3600000);
-    product.detectedCategory=detectCategory(product);
+    product.categoryDetection=classifyCategory(product);
+    product.detectedCategory=product.categoryDetection.category;
     if(getJob(jobId)?.stage!=='cancelled')updateJob(jobId, { status: 'awaiting_purpose', stage: 'awaiting_purpose', product });
   } catch (err) {
     updateJob(jobId, { status: 'failed', stage: 'analyzing', error: friendlyError(err) });
