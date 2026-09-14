@@ -44,8 +44,8 @@ export function buildNarrationPlan({scenes,fonts,style}) {
  const inputArgs=scenes.flatMap(s=>s.animated?['-stream_loop','-1','-i',s.imagePath]:['-i',s.imagePath]);
  const filters=scenes.map((s,i)=>{
    const frames=Math.round(s.end*FPS)-Math.round(s.start*FPS);
-   const base=`[${i}:v]${s.animated?`trim=duration=${s.duration},setpts=PTS-STARTPTS,fps=${FPS},`:'trim=end_frame=1,'}scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1`;
-   const movement=s.animated?`,tpad=stop_mode=clone:stop_duration=${s.duration},trim=end_frame=${frames}`:`,loop=loop=${frames-1}:size=1:start=0,fps=${FPS},trim=end_frame=${frames}`;
+   const base=`[${i}:v]${s.animated?`trim=duration=${s.duration},setpts=PTS-STARTPTS,fps=${FPS},scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920`:'trim=end_frame=1,scale=1200:2134:force_original_aspect_ratio=increase,crop=1200:2134'},setsar=1`;
+   const movement=s.animated?`,tpad=stop_mode=clone:stop_duration=${s.duration},trim=end_frame=${frames}`:`,loop=loop=${frames-1}:size=1:start=0,fps=${FPS},trim=end_frame=${frames},crop=1080:1920:x='60+${i%2?'-':''}24*n/${Math.max(1,frames-1)}':y=107:exact=1`;
    const captions=(s.captionFiles||[]).map(c=>`drawtext=fontfile='${escapePath(fonts.bold)}':textfile='${escapePath(c.path)}':expansion=none:fontsize=80:fontcolor=${s.role==='closing'?'0xFF90CC':'white'}:borderw=5:bordercolor=0x28202A:shadowcolor=black@0.35:shadowx=2:shadowy=3:line_spacing=14:x=(w-text_w)/2:y=${style.captionY}:enable='gte(t,${c.start})*lt(t,${c.end})'`);
    return base+movement+(captions.length?','+captions.join(','):'')+`,format=yuv420p,setpts=PTS-STARTPTS[v${i}]`;
  });
