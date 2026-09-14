@@ -312,7 +312,7 @@
           stopFakeProgress();
           const value = Math.min(100,Math.max(0,job.progress));
           progressFill.style.width = `${value}%`;
-          progressStageLabel.textContent = `${({scripting:'대본을 작성하는 중...',downloading:'상품 이미지를 가져오는 중...',cutout:'사진을 준비하는 중...',matching:'문구에 맞는 사진을 찾는 중...',stickers:'스티커를 준비하는 중...',rendering:'영상을 제작하는 중...'})[job.stage]||renderingPhaseLabel(value)} (${value}%)`;
+          progressStageLabel.textContent = `${({scripting:'대본을 작성하는 중...',downloading:'상품 이미지를 가져오는 중...',cutout:'사진을 준비하는 중...',matching:'문구에 맞는 사진을 찾는 중...','ai-video':'상품 사진을 AI 영상으로 만드는 중...',stickers:'스티커를 준비하는 중...',rendering:'영상을 제작하는 중...'})[job.stage]||renderingPhaseLabel(value)} (${value}%)`;
         } else {
           startFakeRenderProgress();
         }

@@ -1,3 +1,4 @@
+import { addAiClips, aiVideoEnabled, aiVideoConfigured } from './aiVideo.js';
 import { classifyCategory, categoryPatch, categoryStartError } from './category.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -175,6 +176,10 @@ async function runRender(jobId) {
       watchdog.report(60);
       const storyboard=makeStoryboard({narration:timing,assets,category:job.category,purpose:job.purpose,product:job.product});
       storyboard.audioMode='bgm-only';
+      if(aiVideoEnabled()) {
+        updateJob(jobId,{stage:'ai-video'});
+        await addAiClips(storyboard,workDir,(done,total)=>watchdog.report(60+Math.round(done/total*15)));
+      }
       updateJob(jobId,{status:'rendering',stage:'rendering',storyboard,scenes:storyboard.shots.map(s=>({headline:s.headline,start:s.start,end:s.end})),warnings:storyboard.warnings});
 
       await fs.mkdir(config.outputDir, { recursive: true });
@@ -186,7 +191,7 @@ async function runRender(jobId) {
         imagePaths,
         outputPath,
         purpose: job.purpose,
-        onProgress: (fraction) => watchdog.report(Math.round(60 + fraction * 39)),
+        onProgress: (fraction) => watchdog.report(Math.round((aiVideoEnabled()?75:60) + fraction * (aiVideoEnabled()?24:39))),
       });
       const { size } = await fs.stat(outputPath);
 
@@ -202,7 +207,7 @@ async function runRender(jobId) {
     } catch (err) {
       const attempts = (job.attempts || 0) + 1;
       updateJob(jobId, { attempts });
-      if (attempts < config.maxRenderAttempts && !/문구가 부족|사진을 찾지|사진이 부족/.test(err.message||'')) {
+      if (!aiVideoEnabled() && attempts < config.maxRenderAttempts && !/문구가 부족|사진을 찾지|사진이 부족/.test(err.message||'')) {
         updateJob(jobId, { error: friendlyError(err) });
         continue;
       }
@@ -225,6 +230,7 @@ export function startJob(jobId, purposeId) {
   if (job.status !== 'awaiting_purpose') {
     return { ok: false, error: '지금은 영상 제작을 시작할 수 없는 상태예요.' };
   }
+  if(aiVideoEnabled()&&!aiVideoConfigured())return {ok:false,error:'AI 영상 API 키가 설정되지 않았어요.'};
   const categoryError=categoryStartError(job);
   if(categoryError)return {ok:false,error:categoryError};
   const patch = { ...categoryPatch(job), purpose: purposeId, status: 'queued', stage: 'queued' };
@@ -244,6 +250,7 @@ export function retryJob(jobId) {
     enqueueAnalyze(jobId);
     return { ok: true, job: updated };
   }
+  if(aiVideoEnabled()&&!aiVideoConfigured())return {ok:false,error:'AI 영상 API 키가 설정되지 않았어요.'};
   const categoryError=categoryStartError(job);
   if(categoryError)return {ok:false,error:categoryError};
   // 렌더링 단계에서 실패했다면 렌더링부터 다시 시도한다.
