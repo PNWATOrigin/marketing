@@ -21,6 +21,11 @@ export function classifyCategory(product) {
   if(!td && /hsy2|키성장원료|성장기.{0,8}영양/.test(evidence) && /섭취|복용|젤리|구미|캡슐|분말|\d+포|젤리스틱/.test(evidence) && ds===0){
     return {category:'health',confidence:'medium',reason:'growth-ingredient-and-ingestible-form'};
   }
+  // Ingredient abbreviations need an oral-product signal, not a brand-only override.
+  if(!td && ds===0 && /알파.?시클로덱스트린|알파.?사이클로덱스트린|(?:^|[^a-z])(?:a|α)[-‐‑–]?cd(?![a-z])/.test(evidence)
+    && /섭취|복용|먹는|분말|식품|드링크|(?:디다)?샷|\bshot\b/.test(evidence)){
+    return {category:'health',confidence:'medium',reason:'ingredient-and-oral-product'};
+  }
   const category=ds>=3&&ds-hs>=3?'digital':hs>=3&&hs-ds>=3?'health':null;
   return {category,confidence:category?'medium':'unknown',reason:category?'product-description-and-ocr':'insufficient-or-conflicting',scores:{digital:ds,health:hs}};
 }

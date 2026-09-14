@@ -56,3 +56,12 @@ test('growth ingredients plus ingestible form establish health category',()=>{
  assert.equal(classifyCategory({name:'사과맛 젤리 스틱'}).category,null);
  assert.equal(classifyCategory({name:'HSy2 크림'}).category,null);
 });
+
+test('a-cd ingredient needs oral-product evidence; Dida collaboration title is recognized',()=>{
+ assert.equal(detectCategory({name:'디다샷 X 츠키',description:'미국 화제 신성분 a-cd 초고함량 Dida shot'}),'health');
+ assert.equal(detectCategory({name:'알파시클로덱스트린 분말'}),'health');
+ assert.equal(detectCategory({name:'a-cd 원료'}),null);
+ assert.equal(detectCategory({name:'a-cd 크림',description:'샷'}),null);
+ assert.equal(detectCategory({name:'디다샷 X 츠키'}),null);
+ assert.equal(detectCategory({name:'무선 청소기',description:'a-cd 샷'}),'digital');
+});
