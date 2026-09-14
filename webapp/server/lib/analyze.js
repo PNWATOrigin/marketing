@@ -287,7 +287,17 @@ export function analyzeHtml(html, pageUrl) {
     heroImages=dedupeImages($('.thumb-wrap img').toArray().map(el=>toAbsoluteUrl(pageUrl,$(el).attr('src'))).filter(u=>u&&itemId&&u.includes('/upload/item/'+itemId+'/')),8);
     images=dedupeImages([...heroImages,...fromMeta.detailImages],24);
   }
-  images=images.filter(u=>!SKIP_IMAGE_PATTERN.test(u));
+    let categoryText='';
+    if(['esthermall.co.kr','www.esthermall.co.kr'].includes(new URL(pageUrl).hostname)){
+      const goodsNo=new URL(pageUrl).searchParams.get('goodsNo');
+      if(goodsNo && /^\d+$/.test(goodsNo)){
+        heroImages=dedupeImages($('img').toArray().map(el=>toAbsoluteUrl(pageUrl,$(el).attr('data-src')||$(el).attr('src'))).filter(u=>u&&u.includes('/goods/'+goodsNo+'/image/detail/')),8);
+        const details=fromMeta.detailImages.filter(u=>!u.includes('/common-content/'));
+        images=dedupeImages([...heroImages,...details],24);
+        categoryText=cleanText($('img').toArray().filter(el=>details.includes(toAbsoluteUrl(pageUrl,$(el).attr('src')))).map(el=>$(el).attr('alt')||'').join(' '),2000);
+      }
+    }
+    images=images.filter(u=>!SKIP_IMAGE_PATTERN.test(u));
   const detailOnly=['nutrime.co.kr','www.nutrime.co.kr','nutridday.com','www.nutridday.com'].includes(new URL(pageUrl).hostname);
   if(['nutrime.co.kr','www.nutrime.co.kr'].includes(new URL(pageUrl).hostname)) images=dedupeImages($('#strict-product-detail img[src*="/data/editor/goods/"]').toArray().map(el=>toAbsoluteUrl(pageUrl,$(el).attr('src'))),16);
 
@@ -321,7 +331,8 @@ export function analyzeHtml(html, pageUrl) {
   if (priceConflictWarning) warnings.push(priceConflictWarning);
 
   return {
-    sourceUrl: pageUrl,
+      sourceUrl: pageUrl,
+      categoryText,
     heroImages,
     detailOnly,
     preferDetail:fromMeta.detailImages.length>0 || detailOnly,
