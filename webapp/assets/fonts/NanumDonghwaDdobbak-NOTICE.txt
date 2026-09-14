@@ -1,0 +1,6 @@
+0: Copyright © 2019 NAVER Corporation. All rights reserved. Font created by CLOVA AI OCR Team.
+1: Nanum DongHwaDdoBag
+2: Regular
+1: 나눔손글씨 동화또박
+Source and license notice: https://hangeul.naver.com/font
+This application uses NAVER Nanum DongHwaDdoBag (나눔손글씨 동화또박).

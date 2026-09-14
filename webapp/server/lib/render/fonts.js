@@ -39,7 +39,8 @@ let cached = null;
  * 한글이 포함된 자막을 그리는 데 필요한 폰트 파일을 찾는다.
  * 없으면 서버 시작 시점에 바로 에러를 던져서 렌더링 중간에 실패하지 않게 한다.
  */
-export function resolveFonts(variant=0) {
+export function resolveFonts(variant=0,purpose) {
+  if(purpose==='brand'){const font=path.join(FONTS_DIR,'NanumDonghwaDdobbak.ttf');if(!fssync.existsSync(font))throw new Error('세 번째 예시 자막 폰트를 찾지 못했어요.');return {bold:font,regular:font};}
   if(variant%2===1){const cute=path.join(FONTS_DIR,'GamjaFlower-Regular.ttf');if(fssync.existsSync(cute))return {bold:cute,regular:cute};}
   if (cached) return cached;
   const bold = firstExisting(BOLD_CANDIDATES);

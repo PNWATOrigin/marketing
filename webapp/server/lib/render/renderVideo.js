@@ -53,7 +53,7 @@ async function verifyOutput(outputPath, expectedDuration) {
  * 이미지 문제만으로 전체 렌더링이 실패하지 않게 한다.
  */
 export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, purpose, style, sourceData, mediaVariant=0 }) {
-  const fonts = resolveFonts(mediaVariant);
+  const fonts = resolveFonts(mediaVariant,purpose);
   const gradientPath = null;
   const sceneImagePaths = pickSceneImages(scenes, imagePaths, gradientPath);
 
