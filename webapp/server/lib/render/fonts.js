@@ -41,8 +41,7 @@ let cached = null;
  */
 export function resolveFonts(variant=0,purpose) {
   // Donghwa's space glyph fails in production FFmpeg/FreeType (tabsize).
-  if(purpose==='brand'){const font=path.join(FONTS_DIR,'Jua-Regular.ttf');if(fssync.existsSync(font))return {bold:font,regular:font};}
-  if(variant%2===1){const cute=path.join(FONTS_DIR,'GamjaFlower-Regular.ttf');if(fssync.existsSync(cute))return {bold:cute,regular:cute};}
+  if(variant%2===1){const cute=path.join(FONTS_DIR,'Dongle-Bold.ttf');if(fssync.existsSync(cute))return {bold:cute,regular:cute};}
   if (cached) return cached;
   const bold = firstExisting(BOLD_CANDIDATES);
   const regular = firstExisting(REGULAR_CANDIDATES) || bold;
