@@ -75,13 +75,23 @@
   const submitBtn = document.getElementById('submit-btn');
   const categoryGroup = document.getElementById('category-group');
   let selectedCategory = null;
+  let submitting = false;
+  function syncInputState() {
+    categoryGroup.querySelectorAll('.category-chip').forEach(c=>{
+      const selected=c.dataset.category===selectedCategory;
+      c.classList.toggle('selected',selected);
+      c.setAttribute('aria-pressed',String(selected));
+    });
+    submitBtn.disabled=submitting || !selectedCategory || !urlInput.value.trim();
+  }
+  urlInput.addEventListener('input',syncInputState);
 
   categoryGroup.querySelectorAll('.category-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
       categoryGroup.querySelectorAll('.category-chip').forEach((c) => c.classList.remove('selected'));
       chip.classList.add('selected');
       selectedCategory = chip.dataset.category;
-      submitBtn.disabled = false;
+      syncInputState();
     });
   });
   const inputError = document.getElementById('input-error');
@@ -264,7 +274,6 @@
     previewPanel.hidden = true;
   }
 
-  const categoryCheckedJobs = new Set();
   function applyJobState(job) {
     switch (job.status) {
       case 'queued':
@@ -279,20 +288,10 @@
           window.alert('상품 카테고리를 확실하게 확인하지 못했어요. 상품명과 상세 설명이 있는 개별 상품 URL을 입력해주세요.');
           clearJob(); showView('input'); return;
         }
-        if(detected && detected!==(job.requestedCategory||job.category) && !categoryCheckedJobs.has(job.id)) {
-          categoryCheckedJobs.add(job.id);
-          const names={digital:'디지털/가전',health:'건강기능식품'};
-          if(job.category===detected) {
-            window.alert(`상품 정보를 확인해 ${names[detected]} 카테고리로 바로잡았어요. 이 카테고리로 영상을 제작합니다.`);
-          } else if(window.confirm(`이 상품은 ${names[detected]} 상품으로 보이는데, ${names[job.category]||'다른 카테고리'}을 선택하셨어요.\n카테고리를 다시 선택할까요?\n확인: 다시 선택 / 취소: 현재 선택 유지`)) {
-            clearJob(); showView('input'); return;
-          }
-        }
-
         stopFakeProgress();
         stopPreviewCycle();
         selectedCategory=job.category;
-        categoryGroup.querySelectorAll('.category-chip').forEach(c=>c.classList.toggle('selected',c.dataset.category===job.category));
+        syncInputState();
         renderProductSummary(job.product);
         renderPurposeCards();
         showView('purpose');
@@ -384,7 +383,8 @@
       return;
     }
 
-    submitBtn.disabled = true;
+    if(submitting)return;
+    submitting=true; syncInputState();
     try {
       await loadPurposes();
       const { job } = await api('/jobs', { method: 'POST', body: JSON.stringify({ url, category: selectedCategory }) });
@@ -394,7 +394,7 @@
     } catch (err) {
       setError(inputError, err.message);
     } finally {
-      submitBtn.disabled = false;
+      submitting=false; syncInputState();
     }
   });
 
@@ -432,6 +432,7 @@
     clearJob();
     urlInput.value = localStorage.getItem(STORAGE_KEYS.url) || '';
     setError(inputError, '');
+    syncInputState();
     showView('input');
   }
 
@@ -445,6 +446,7 @@
     await loadPurposes().catch(() => {});
     const savedUrl = localStorage.getItem(STORAGE_KEYS.url);
     if (savedUrl) urlInput.value = savedUrl;
+    syncInputState();
 
     const savedJobId = localStorage.getItem(STORAGE_KEYS.jobId);
     if (savedJobId) {
