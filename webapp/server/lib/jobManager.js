@@ -77,7 +77,7 @@ async function enrichWithImageText(product, workDir) {
 
 async function runAnalyze(jobId) {
   const job = getJob(jobId);
-  if (!job) return;
+  if (!job || job.stage==='cancelled') return;
   updateJob(jobId, { status: 'analyzing', stage: 'analyzing', error: null });
   try {
     const product = await cached('products-detail-v6',job.url,async()=>{
@@ -263,3 +263,5 @@ export function retryJob(jobId) {
   enqueueRender(jobId);
   return { ok: true, job: updated };
 }
+
+export function hasRunningWorker(jobId){return inFlight.has(`analyze:${jobId}`)||inFlight.has(`render:${jobId}`);}

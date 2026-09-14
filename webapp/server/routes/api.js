@@ -3,8 +3,8 @@ import path from 'node:path';
 import express from 'express';
 import { config } from '../config.js';
 import { assertSafeUrlFormat, UnsafeUrlError } from '../lib/ssrf.js';
-import { createJob, getJob, updateJob, toPublicJob, countActiveJobsForClient } from '../lib/jobStore.js';
-import { enqueueAnalyze, startJob, retryJob } from '../lib/jobManager.js';
+import { createJob, getJob, updateJob, toPublicJob, activeJobsForClient } from '../lib/jobStore.js';
+import { enqueueAnalyze, startJob, retryJob, hasRunningWorker } from '../lib/jobManager.js';
 import { PURPOSES } from '../lib/script.js';
 
 export const router = express.Router();
@@ -93,8 +93,18 @@ router.post(
     }
 
     const clientId = getClientId(req);
-    if (countActiveJobsForClient(clientId) >= config.maxActiveJobsPerClient) {
-      return res.status(429).json({ error: '이미 진행 중인 작업이 있어요. 완료 후 다시 시도해주세요.' });
+    for(const active of activeJobsForClient(clientId)){
+      // Abandoned example-selection screens must not reserve a rendering slot.
+      if(active.status==='awaiting_purpose'){
+        updateJob(active.id,{status:'failed',stage:'cancelled',error:'새 상품 분석으로 이전 선택 대기를 종료했어요.'});
+        continue;
+      }
+      if(!hasRunningWorker(active.id)){
+        updateJob(active.id,{status:'failed',stage:'interrupted',error:'중단된 작업을 정리했어요. 다시 제작해주세요.'});
+        continue;
+      }
+      // A real worker remains active: restore its progress rather than hide it behind an error.
+      return res.status(200).json({job:toPublicJob(active),resumed:true});
     }
 
     const job = createJob({ url, category, clientId });

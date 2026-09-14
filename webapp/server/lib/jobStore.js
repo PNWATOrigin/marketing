@@ -178,3 +178,7 @@ export async function cleanupExpiredJobs() {
     }
   }
 }
+
+export function activeJobsForClient(clientId){
+ return [...jobs.values()].filter(job=>job.clientId===clientId&&ACTIVE_STATUSES.has(job.status));
+}

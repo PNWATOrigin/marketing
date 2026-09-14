@@ -401,9 +401,9 @@
     submitting=true; syncInputState();
     try {
       await loadPurposes();
-      const { job } = await api('/jobs', { method: 'POST', body: JSON.stringify({ url, category: selectedCategory }) });
-      persistJob(job.id, url);
-      showView('analyzing');
+      const { job, resumed } = await api('/jobs', { method: 'POST', body: JSON.stringify({ url, category: selectedCategory }) });
+      persistJob(job.id, resumed?null:url);
+      if(resumed)applyJobState(job);else showView('analyzing');
       poll(job.id);
     } catch (err) {
       setError(inputError, err.message);
