@@ -47,6 +47,8 @@ export function simplifyCaptionProduct(text,product,category){
 
 // Text-only breath grouping: keep particles with words and modifiers with the next word.
 export function splitBreathCaptions(text,maxChars=10){
+ const normalized=String(text||'').replace(/\s+/g,' ').trim();
+ if([...normalized].length<=maxChars)return normalized?[normalized]:[];
  const words=String(text||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
  const cost=Array(words.length+1).fill(Infinity),next=[];cost[words.length]=0;
  for(let i=words.length-1;i>=0;i--){

@@ -38,7 +38,7 @@ export async function describeAssets(paths, product, onProgress=()=>{}) {
     if (/19\s*금|성인\s*인증|미성년자|청소년.*이용불가|무이자|신용카드|카드\s*혜택|결제\s*안내|이모티콘|emoticon|emoji|adult.only/i.test(info.text+' '+alt)) continue;
     const confirmedHero=!file.includes('_slice')&&(product.heroImages||[]).includes(product.images?.[sourceIndex]);
     const type = confirmedHero&&info.text.replace(/\s/g,'').length<160?'PRODUCT_HERO':info.type==='TEXT_IMAGE'?'TEXT_IMAGE':/제품|상품|본품|패키지|product|hero/i.test(alt)&&info.type==='DETAIL'?'PRODUCT_HERO':rules.find(([,r])=>r.test(alt))?.[0]||info.type;
-    assets[i]=({ id:hash, path:file, ...info, type, quality:Math.min(1,Math.min(info.width,info.height)/1000), visibility: type==='TEXT_IMAGE'?0.2:0.8, composition:Math.min(info.width,info.height)/Math.max(info.width,info.height), tags:tokens(info.text+' '+alt), provenance:'page-image+alt+local-ocr', productName:product.name });
+    assets[i]=({ id:hash, sourceIndex, path:file, ...info, type, quality:Math.min(1,Math.min(info.width,info.height)/1000), visibility: type==='TEXT_IMAGE'?0.2:0.8, composition:Math.min(info.width,info.height)/Math.max(info.width,info.height), tags:tokens(info.text+' '+alt), provenance:'page-image+alt+local-ocr', productName:product.name });
   }
   }
   await Promise.all([worker(),worker()]);
@@ -60,7 +60,9 @@ function choose(text, assets, used, previous, profile, closing=false) {
   const pool=relevant.length?relevant:ranked;
   const fresh=ranked.filter(a=>!used.has(a.asset.id));
   const different=pool.filter(a=>a.asset.id!==previous);
-  const candidates=fresh.length?fresh:different.length?different:pool;
+  const usedSources=new Set(assets.filter(a=>used.has(a.id)).map(a=>a.sourceIndex).filter(Number.isInteger));
+  const freshSources=fresh.filter(a=>Number.isInteger(a.asset.sourceIndex)&&!usedSources.has(a.asset.sourceIndex));
+  const candidates=freshSources.length?freshSources:fresh.length?fresh:different.length?different:pool;
   return candidates.map(({asset:a,semantic})=>({asset:a,semantic,score:semantic*.30+(a.type==='PRODUCT_HERO'?.35:a.type==='CLOSEUP'?.25:a.type==='USAGE'?.18:0)+a.quality*.15+a.visibility*.1+a.composition*.05+(profile.preferred.includes(a.type)?.03:0)+(closing&&a.type==='PRODUCT_HERO'?.02:0)})).sort((a,b)=>b.score-a.score)[0];
 }
 

@@ -168,7 +168,7 @@ async function runRender(jobId) {
       const script=generateExampleScript(job.product,job.purpose,job.category,job.scriptVariant);
       const timing={duration:15,sceneBoundaries:[...script.scenes.map(s=>s.start),15],words:script.scenes.flatMap(s=>[
         {start:s.start,end:s.start+s.duration/2,text:s.headline},
-        {start:s.start+s.duration/2,end:s.end,text:s.sub||s.headline},
+        {start:s.start+s.duration/2,end:s.end,text:s.sub||''},
       ])};
       updateJob(jobId,{status:'rendering',stage:'downloading'});
       watchdog.report(5);

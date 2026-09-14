@@ -73,7 +73,7 @@ export async function renderVideo({ scenes, imagePaths, outputPath, onProgress, 
         const text=group.map(c=>c.text).join(' ');
         const lines=splitBreathCaptions(text,10);
         const start=Math.max(0,group[0].start-scene.start),end=Math.min(scene.duration,group.at(-1).end-scene.start);
-        const weights=lines.map(line=>[...line.replace(/\s/g,'')].length+2);const totalWeight=weights.reduce((a,b)=>a+b,0);let elapsed=0;
+        const weights=lines.map(()=>1);const totalWeight=lines.length;let elapsed=0;
         for(let n=0;n<lines.length;n++){
           const chunk=lines[n],count=lines.length,part=n;
           const file=path.join(textDir,`${i}-cue-${captionFiles.length}.txt`);
