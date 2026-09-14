@@ -275,16 +275,20 @@
       }
       case 'awaiting_purpose': {
         const detected=job.product?.detectedCategory;
-        if(detected && detected!==job.category && !categoryCheckedJobs.has(job.id)) {
+        if(detected && detected!==(job.requestedCategory||job.category) && !categoryCheckedJobs.has(job.id)) {
           categoryCheckedJobs.add(job.id);
           const names={digital:'디지털/가전',health:'건강기능식품'};
-          if(window.confirm(`이 상품은 ${names[detected]} 상품으로 보이는데, ${names[job.category]||'다른 카테고리'}을 선택하셨어요.\n카테고리를 다시 선택할까요?\n확인: 다시 선택 / 취소: 현재 선택 유지`)) {
+          if(job.category===detected) {
+            window.alert(`상품 정보를 확인해 ${names[detected]} 카테고리로 바로잡았어요. 이 카테고리로 영상을 제작합니다.`);
+          } else if(window.confirm(`이 상품은 ${names[detected]} 상품으로 보이는데, ${names[job.category]||'다른 카테고리'}을 선택하셨어요.\n카테고리를 다시 선택할까요?\n확인: 다시 선택 / 취소: 현재 선택 유지`)) {
             clearJob(); showView('input'); return;
           }
         }
 
         stopFakeProgress();
         stopPreviewCycle();
+        selectedCategory=job.category;
+        categoryGroup.querySelectorAll('.category-chip').forEach(c=>c.classList.toggle('selected',c.dataset.category===job.category));
         renderProductSummary(job.product);
         renderPurposeCards();
         showView('purpose');

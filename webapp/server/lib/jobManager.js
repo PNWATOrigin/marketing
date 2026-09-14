@@ -1,4 +1,4 @@
-import { classifyCategory } from './category.js';
+import { classifyCategory, categoryPatch } from './category.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { config } from '../config.js';
@@ -85,7 +85,7 @@ async function runAnalyze(jobId) {
     },3600000);
     product.categoryDetection=classifyCategory(product);
     product.detectedCategory=product.categoryDetection.category;
-    if(getJob(jobId)?.stage!=='cancelled')updateJob(jobId, { status: 'awaiting_purpose', stage: 'awaiting_purpose', product });
+    if(getJob(jobId)?.stage!=='cancelled')updateJob(jobId, { status: 'awaiting_purpose', stage: 'awaiting_purpose', ...categoryPatch({...job,product}) });
   } catch (err) {
     updateJob(jobId, { status: 'failed', stage: 'analyzing', error: friendlyError(err) });
   }
@@ -225,7 +225,7 @@ export function startJob(jobId, purposeId) {
   if (job.status !== 'awaiting_purpose') {
     return { ok: false, error: '지금은 영상 제작을 시작할 수 없는 상태예요.' };
   }
-  const patch = { purpose: purposeId, status: 'queued', stage: 'queued' };
+  const patch = { ...categoryPatch(job), purpose: purposeId, status: 'queued', stage: 'queued' };
   const updated = updateJob(jobId, patch);
   enqueueRender(jobId);
   return { ok: true, job: updated };
@@ -243,7 +243,7 @@ export function retryJob(jobId) {
     return { ok: true, job: updated };
   }
   // 렌더링 단계에서 실패했다면 렌더링부터 다시 시도한다.
-  const updated = updateJob(jobId, { status: 'queued', stage: 'queued', error: null, attempts: 0 });
+  const updated = updateJob(jobId, { ...categoryPatch(job), status: 'queued', stage: 'queued', error: null, attempts: 0 });
   enqueueRender(jobId);
   return { ok: true, job: updated };
 }

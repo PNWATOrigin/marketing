@@ -19,3 +19,10 @@ export function classifyCategory(product) {
   return {category,confidence:category?'medium':'unknown',reason:category?'product-description-and-ocr':'insufficient-or-conflicting',scores:{digital:ds,health:hs}};
 }
 export function detectCategory(product){return classifyCategory(product).category;}
+
+export function categoryPatch(job) {
+  const categoryDetection=classifyCategory(job.product||{});
+  const detectedCategory=categoryDetection.category;
+  const category=categoryDetection.confidence==='high' ? detectedCategory : job.category;
+  return {category,requestedCategory:job.requestedCategory||job.category,product:{...job.product,categoryDetection,detectedCategory}};
+}
