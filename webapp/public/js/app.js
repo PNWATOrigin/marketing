@@ -362,6 +362,7 @@
     stopPolling();
     try {
       const { job } = await api(`/jobs/${jobId}`);
+      if(currentJobId!==jobId)return;
       applyJobState(job);
       if (!['completed', 'failed'].includes(job.status)) {
         // awaiting_purpose는 사용자의 선택을 기다리는 정적 상태라 다시 폴링할 필요가 없다.
@@ -370,10 +371,17 @@
         }
       }
     } catch (err) {
+      if(currentJobId!==jobId)return;
+      if(err.status===404){clearJob();showView('input');setError(inputError,'이전 작업이 만료됐어요. URL로 다시 시작해주세요.');return;}
       console.error(err);
       pollTimer = setTimeout(() => poll(jobId), 3000);
     }
   }
+
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden&&currentJobId)poll(currentJobId);
+  });
+  window.addEventListener('online',()=>{if(currentJobId)poll(currentJobId);});
 
   function persistJob(jobId, url) {
     currentJobId = jobId;

@@ -80,10 +80,13 @@ async function runAnalyze(jobId) {
   if (!job || job.stage==='cancelled') return;
   updateJob(jobId, { status: 'analyzing', stage: 'analyzing', error: null });
   try {
-    const product = await cached('products-detail-v8',job.url,async()=>{
+    const product = await cached('products-detail-v9',job.url,async()=>{
       const {html,finalUrl}=await fetchProductPage(job.url);
       const product=analyzeHtml(html,finalUrl);
-      await enrichWithImageText(product,path.join(config.workDir,jobId,'ocr'));
+      if(!classifyCategory(product).category){
+        await enrichWithImageText(product,path.join(config.workDir,jobId,'ocr'));
+        product.ocrEnriched=true;
+      }
       return product;
     },3600000);
     product.categoryDetection=classifyCategory(product);
@@ -155,6 +158,11 @@ async function runRender(jobId) {
     const workDir = path.join(config.workDir, jobId);
     const watchdog = startProgressWatchdog(jobId);
     try {
+      if(!job.product.ocrEnriched){
+        await enrichWithImageText(job.product,path.join(workDir,'ocr'));
+        job.product.ocrEnriched=true;
+        updateJob(jobId,{product:job.product});
+      }
       if(!Number.isInteger(job.scriptVariant)){job.scriptVariant=nextScriptVariant(job.product);updateJob(jobId,{scriptVariant:job.scriptVariant});}
       if(!Number.isInteger(job.mediaVariant)){job.mediaVariant=nextScriptVariant({name:'media:'+job.product.name},4);updateJob(jobId,{mediaVariant:job.mediaVariant});}
       const script=generateExampleScript(job.product,job.purpose,job.category,job.scriptVariant);
