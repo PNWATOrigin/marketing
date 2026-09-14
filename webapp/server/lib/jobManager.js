@@ -1,3 +1,4 @@
+import { generateExampleScript } from './exampleTemplates.js';
 import { addAiClips, aiVideoEnabled, aiVideoConfigured } from './aiVideo.js';
 import { classifyCategory, categoryPatch, categoryStartError } from './category.js';
 import fs from 'node:fs/promises';
@@ -153,10 +154,10 @@ async function runRender(jobId) {
     const workDir = path.join(config.workDir, jobId);
     const watchdog = startProgressWatchdog(jobId);
     try {
-      const script=generateScript(job.product,job.purpose,job.category);
-      const timing={duration:15,words:script.scenes.flatMap(s=>[
-        {start:s.start,end:s.start+1.4,text:s.headline},
-        {start:s.start+1.4,end:s.end,text:s.sub||s.headline},
+      const script=generateExampleScript(job.product,job.purpose,job.category);
+      const timing={duration:15,sceneBoundaries:[...script.scenes.map(s=>s.start),15],words:script.scenes.flatMap(s=>[
+        {start:s.start,end:s.start+s.duration/2,text:s.headline},
+        {start:s.start+s.duration/2,end:s.end,text:s.sub||s.headline},
       ])};
       updateJob(jobId,{status:'rendering',stage:'downloading'});
       watchdog.report(5);

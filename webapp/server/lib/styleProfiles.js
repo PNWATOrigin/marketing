@@ -1,3 +1,4 @@
+import {EXAMPLE_TEMPLATES} from './exampleTemplates.js';
 // Four user references, visually inspected 2026-09-11. References are never render inputs.
 export const STYLE_PROFILES = {
   digital: { id:'digital-usage-v1', references:[14.28,18.16], captionY:1000, accent:'0x66D9EF', captionBox:true, motion:['push','pan','pull'], preferred:['USAGE','LIFESTYLE','PRODUCT_HERO','DETAIL'], closing:1.3 },
@@ -5,5 +6,5 @@ export const STYLE_PROFILES = {
 };
 export function styleFor(category, purpose) {
   const base = STYLE_PROFILES[category] || STYLE_PROFILES.digital;
-  return { ...base, purpose, hookTarget: purpose === 'views' ? 0.9 : 1.2, bodyTarget: purpose === 'brand' ? 2 : 1.6, closing: purpose === 'brand' ? 1.8 : base.closing };
+  return { ...base, ...EXAMPLE_TEMPLATES[purpose], purpose, hookTarget: purpose === 'views' ? 0.9 : 1.2, bodyTarget: purpose === 'brand' ? 2 : 1.6, closing: purpose === 'brand' ? 1.8 : base.closing };
 }

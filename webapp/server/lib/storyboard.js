@@ -65,6 +65,7 @@ export function makeStoryboard({ narration, assets, category, purpose, product }
     if (elapsed>=0.5 && (semanticBreak&&elapsed>=target*0.65||elapsed>=target) && duration-word.start>=style.closing) boundaries.push(word.start);
   }
   boundaries.push(duration);
+  if(narration.sceneBoundaries)boundaries.splice(0,boundaries.length,...narration.sceneBoundaries);
   const used=new Map(); let previous=null;
   const shots=boundaries.slice(0,-1).map((start,i)=>{
     const end=boundaries[i+1];
