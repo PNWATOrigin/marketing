@@ -290,7 +290,18 @@
   function applyJobState(job) {
     if(job.product)captionHistoryKey='caption-hook-v2:'+String(job.product.displayName||job.product.name||job.url);
     switch (job.status) {
-      case 'queued':
+      case 'queued': {
+        if(job.purpose){
+          stopFakeProgress();
+          showView('progress');
+          startPreviewCycle(job);
+          progressFill.style.width='1%';
+          progressStageLabel.textContent='영상 제작 순서를 기다리는 중...';
+        }else{
+          stopPreviewCycle();showView('analyzing');
+        }
+        break;
+      }
       case 'analyzing': {
         stopPreviewCycle();
         showView('analyzing');
@@ -358,11 +369,13 @@
     }
   }
 
+  let pollVersion=0;
   async function poll(jobId) {
+    const version=++pollVersion;
     stopPolling();
     try {
-      const { job } = await api(`/jobs/${jobId}`);
-      if(currentJobId!==jobId)return;
+      const { job } = await api(`/jobs/${jobId}?t=${Date.now()}`);
+      if(currentJobId!==jobId||version!==pollVersion)return;
       applyJobState(job);
       if (!['completed', 'failed'].includes(job.status)) {
         // awaiting_purpose는 사용자의 선택을 기다리는 정적 상태라 다시 폴링할 필요가 없다.
@@ -371,7 +384,7 @@
         }
       }
     } catch (err) {
-      if(currentJobId!==jobId)return;
+      if(currentJobId!==jobId||version!==pollVersion)return;
       if(err.status===404){clearJob();showView('input');setError(inputError,'이전 작업이 만료됐어요. URL로 다시 시작해주세요.');return;}
       console.error(err);
       pollTimer = setTimeout(() => poll(jobId), 3000);
