@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {detectCategory,categoryPatch,categoryStartError} from '../server/lib/category.js';
+import {classifyCategory,detectCategory,categoryPatch,categoryStartError} from '../server/lib/category.js';
 test('product category recognizes supplements and electronics without selected category bias',()=>{
  for(const name of ['저분자 피쉬 콜라겐','콜 라 겐 스틱','Collagen peptides','콘드로이친 1200','락토페린'])assert.equal(detectCategory({name}),'health',name);
  for(const name of ['무선 청소기','보조배터리','에어프라이어'])assert.equal(detectCategory({name}),'digital',name);
@@ -42,4 +42,10 @@ test('nutrition foods join app health category without treating sugar claims as 
  assert.equal(detectCategory({name:'단백질 샴푸'}),null);
  assert.equal(detectCategory({name:'무선 청소기',description:'고단백 그래놀라 증정'}),'digital');
  assert.equal(categoryStartError({category:'health',product:{name:'제로핵 고단백 단백질 무당 그래놀라 2종'}}),null);
+});
+
+test('apple cider vinegar food titles join health but skincare does not',()=>{
+ for(const name of ['🛍️사은품증정🛍️ [WELLNESS-CLUB] 애사비 블러드오렌지 클렌즈','애플 사이다 비니거','사과초모식초'])assert.equal(classifyCategory({name}).category,'health');
+ assert.equal(classifyCategory({name:'애사비 클렌징 토너'}).category,null);
+ assert.equal(classifyCategory({name:'블러드오렌지 향수'}).category,null);
 });
