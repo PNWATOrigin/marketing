@@ -1,4 +1,4 @@
-import {simplifyCaptionProduct} from './captionText.js';
+import {simplifyCaptionProduct,captionProductName} from './captionText.js';
 import {filterBannedClaims} from './claimsGuard.js';
 export const EXAMPLE_TEMPLATES={
  views:{id:'example-1',captionY:760,fontSize:72,fontColor:'0x58352D',borderColor:'0x58352D',borderWidth:0,boxColor:'0xF7C7DC',closingColor:'0xFFF2CE',cuts:[0,2,5,8,12,15],preferred:['DETAIL','PRODUCT_HERO','CLOSEUP']},
@@ -8,7 +8,7 @@ export const EXAMPLE_TEMPLATES={
 const clean=x=>String(x||'').replace(/\s+/g,' ').trim();
 export function generateExampleScript(product,purpose,category){
  const template=EXAMPLE_TEMPLATES[purpose];if(!template)throw new Error('콘텐츠 예시를 선택해주세요.');
- const name=category==='health'?'영양제':clean(product.name).slice(0,28)||'이 상품';
+ const name=captionProductName(product,category);
  const raw=product.detailOnly?(product.detailLines||[]):[...(product.features||[]),...(product.detailLines||[])];
  const facts=[...new Set(filterBannedClaims(raw.map(clean).filter(Boolean)).kept)].filter(t=>!(/배송|고객센터|무이자|카드혜택|교환|반품/.test(t))).slice(0,8);
  if(product.detailOnly&&facts.length<2)throw new Error('상세 이미지에서 읽을 수 있는 문구가 부족해요.');
