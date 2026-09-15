@@ -34,6 +34,9 @@ export function classifyCategory(product) {
     ((health.test(evidence)||nutritionFood.test(evidence)||additionalIngredient.test(evidence)) &&
       /섭취|복용|먹는|캡슐|정제|분말|젤리|구미|식품|하루.{0,8}[정포알]|한정당|\d+(?:정|포|캡슐)(?=[^가-힣]|입|분|$)/.test(evidence))
   ))return {category:'health',confidence:'medium',reason:'health-evidence-and-oral-use'};
+  if(ds===0 && hs>=2 && !cosmetic.test(evidence) && /\d+(?:\.\d+)?(?:mg|mcg|μg)/.test(title)){
+    return {category:'health',confidence:'medium',reason:'ingredient-and-product-dosage'};
+  }
   const category=ds>=3&&ds-hs>=3?'digital':hs>=3&&hs-ds>=3?'health':null;
   return {category,confidence:category?'medium':'unknown',reason:category?'product-description-and-ocr':'insufficient-or-conflicting',scores:{digital:ds,health:hs}};
 }

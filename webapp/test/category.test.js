@@ -82,3 +82,9 @@ test('package OCR recognizes tablet counts followed by package weight',()=>{
  assert.equal(detectCategory({name:'지니어스업 키즈',categoryText:'판토텐산칼슘 6mg 한 정당'}),'health');
  assert.equal(detectCategory({name:'30정도 온열 베개'}),null);
 });
+
+test('title dosage supports OCR ingredient even when tiny tablet count is unreadable',()=>{
+ assert.equal(detectCategory({name:'지니어스업 키즈 1500mg',categoryText:'5종 혼합 유산균'}),'health');
+ assert.equal(detectCategory({name:'키즈 1500mg'}),null);
+ assert.equal(detectCategory({name:'콜라겐 크림 1500mg'}),null);
+});
