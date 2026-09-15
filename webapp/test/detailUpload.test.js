@@ -12,3 +12,11 @@ test('preserves JPEG source bytes',()=>{
  const result=decodeDetailUpload('data:image/jpeg;base64,'+bytes.toString('base64'));
  assert.equal(result.ext,'.jpg');assert.deepEqual(result.buffer,bytes);
 });
+import {decodeDetailUploads} from '../server/lib/detailUpload.js';
+test('accepts three uploads, rejects four and supports old single upload',()=>{
+ const img='data:image/jpeg;base64,'+Buffer.from([255,216,255,224]).toString('base64');
+ assert.equal(decodeDetailUploads([img,img,img]).length,3);
+ assert.throws(()=>decodeDetailUploads([img,img,img,img]),/3/);
+ assert.equal(decodeDetailUploads(img).length,1);
+ assert.deepEqual(decodeDetailUploads(undefined),[]);
+});

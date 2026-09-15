@@ -1,5 +1,5 @@
 import fs from 'node:fs/promises';
-import { decodeDetailUpload } from '../lib/detailUpload.js';
+import { decodeDetailUploads } from '../lib/detailUpload.js';
 import fssync from 'node:fs';
 import path from 'node:path';
 import express from 'express';
@@ -110,13 +110,13 @@ router.post(
     }
 
     let detail;
-    try { detail=decodeDetailUpload(req.body.detailImage); } catch(err) { return res.status(400).json({error:err.message}); }
+    try { detail=decodeDetailUploads(req.body.detailImage); } catch(err) { return res.status(400).json({error:err.message}); }
     const job = createJob({ url, category, clientId });
-    if(detail){
+    if(detail.length){
       try {
         await fs.mkdir(config.jobsDir,{recursive:true});
-        const uploadedDetail=path.join(config.jobsDir,`${job.id}.detail${detail.ext}`);
-        await fs.writeFile(uploadedDetail,detail.buffer);
+        const uploadedDetail=detail.map((item,i)=>path.join(config.jobsDir,`${job.id}.detail-${i}${item.ext}`));
+        for(const [i,item] of detail.entries())await fs.writeFile(uploadedDetail[i],item.buffer);
         updateJob(job.id,{uploadedDetail});
       } catch(err) { updateJob(job.id,{status:'failed',error:'상세이미지를 저장하지 못했어요.'}); throw err; }
     }

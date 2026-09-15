@@ -167,7 +167,7 @@ export async function cleanupExpiredJobs() {
       await fs.rm(job.outputPath.replace(/\.mp4$/,'.timeline.xml'),{force:true}).catch(()=>{});
       await fs.rm(job.outputPath, { force: true }).catch(() => {});
     }
-    if(job.uploadedDetail)await fs.rm(job.uploadedDetail,{force:true}).catch(()=>{});
+    for(const file of [job.uploadedDetail||[]].flat())await fs.rm(file,{force:true}).catch(()=>{});
     const workDir = path.join(config.workDir, job.id);
     await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
 

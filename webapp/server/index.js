@@ -16,7 +16,7 @@ await loadJobsFromDisk();
 
 const app = express();
 app.disable('x-powered-by');
-app.use('/api/jobs', express.json({ limit: '28mb' }));
+app.use('/api/jobs', express.json({ limit: '84mb' }));
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(config.publicDir, { setHeaders(res, filePath) { if (/\.(html|js|css)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache'); } }));
 app.use('/api', apiRouter);

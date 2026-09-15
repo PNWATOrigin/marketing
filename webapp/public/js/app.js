@@ -84,9 +84,14 @@
   detailInput.addEventListener('change',()=>{detailClear.hidden=!detailInput.files.length;});
   detailClear.addEventListener('click',()=>{detailInput.value='';detailClear.hidden=true;});
   async function readDetailImage(){
-    const file=detailInput.files[0]; if(!file)return undefined;
+    const files=[...detailInput.files]; if(!files.length)return undefined;
+    if(files.length>3)throw new Error('상세이미지는 최대 3장까지 선택해주세요.');
+    const results=[];
+    for(const file of files){
     if(!['image/jpeg','image/png'].includes(file.type)||file.size>20*1024*1024)throw new Error('상세이미지는 JPG·PNG, 최대 20MB로 넣어주세요.');
-    return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('이미지를 읽지 못했어요. 다시 선택해주세요.'));reader.readAsDataURL(file);});
+    results.push(await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('이미지를 읽지 못했어요. 다시 선택해주세요.'));reader.readAsDataURL(file);}));
+    }
+    return results;
   }
   const submitBtn = document.getElementById('submit-btn');
   const categoryGroup = document.getElementById('category-group');

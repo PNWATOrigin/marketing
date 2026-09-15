@@ -239,17 +239,26 @@ export async function downloadImages(urls, destDir, { max = config.maxImages, on
   return results.flat();
 }
 
-export async function prepareDetailImage(file, destDir, {skipPhotoFilter=false}={}) {
+async function prepareSingleDetailImage(file, destDir, {skipPhotoFilter=false,index=0}={}) {
   await fs.mkdir(destDir,{recursive:true});
   const info=await analyzeImage(file);
   if(info.verdict==='reject' || info.w<600 || info.h<info.w || info.w*info.h>80000000)
     throw new Error('상세이미지는 가로 600px 이상, 세로형 JPG·PNG 원본(8천만 픽셀 이하)으로 넣어주세요.');
   let files;
-  if(info.verdict==='slice') files=await sliceTallImage(file,destDir,0,info.w,info.h);
-  else { const target=path.join(destDir,'img_0'+path.extname(file)); await fs.copyFile(file,target); files=[target]; }
+  if(info.verdict==='slice') files=await sliceTallImage(file,destDir,index,info.w,info.h);
+  else { const target=path.join(destDir,`img_${index}`+path.extname(file)); await fs.copyFile(file,target); files=[target]; }
   if(skipPhotoFilter)return files;
   const decisions=await photographicSlices(files);
   const chosen=[];
   for(const [i,p] of files.entries())if(decisions?decisions[i]:await isPhotographic(p))chosen.push(p);
   return chosen;
+}
+
+export async function prepareDetailImage(input,destDir,options={}) {
+  const files=Array.isArray(input)?input:[input];
+  if(files.length>3)throw new Error('상세이미지는 최대 3장까지 선택해주세요.');
+  const cuts=[];
+  // Sequential decoding keeps memory bounded for long original images.
+  for(const [index,file] of files.entries())cuts.push(...await prepareSingleDetailImage(file,destDir,{...options,index}));
+  return cuts;
 }

@@ -10,3 +10,10 @@ export function decodeDetailUpload(value){
   if(!['.jpg','.png'].includes(ext) || (match[1]==='png')!==(ext==='.png'))throw new Error('올바른 JPG·PNG 이미지 파일을 선택해주세요.');
   return {buffer,ext};
 }
+
+export function decodeDetailUploads(value){
+  if(value===undefined||value===null||value==='')return [];
+  const values=Array.isArray(value)?value:[value];
+  if(values.length>3)throw new Error('상세이미지는 최대 3장까지 선택해주세요.');
+  return values.map(item=>{const decoded=decodeDetailUpload(item);if(!decoded)throw new Error('올바른 상세이미지를 선택해주세요.');return decoded;});
+}
