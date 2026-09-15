@@ -41,7 +41,7 @@ export async function analyzeImage(filePath) {
 // (안티에일리어싱 경계를 빼면) 구역 안 색이 몇 가지로 고정된다. 이미지를 잘게 나눈
 // 구역 단위로 이 "사진다움"을 측정해서, 이미지 전체가 아니라 일부만 사진이어도
 // (문구+상품 사진을 함께 넣은 상세 이미지처럼) 그 사진 영역이 충분하면 채택한다.
-async function isPhotographic(filePath) {
+export async function isPhotographic(filePath, strict=false) {
   const SIZE = 96;
   const GRID = 24; // SIZE를 GRID로 나눈 4x4px 구역 단위로 색 다양성을 본다
   const BLOCK = SIZE / GRID;
@@ -54,11 +54,11 @@ async function isPhotographic(filePath) {
       { timeout: 5000, encoding: 'buffer', maxBuffer: 1024 * 1024 }
     );
     const pixels = stdout;
-    if (pixels.length < SIZE * SIZE * 3) return true; // 해상도가 예상과 다르면 분석을 건너뛰고 통과시킨다
+    if (pixels.length < SIZE * SIZE * 3) return !strict; // 해상도가 예상과 다르면 분석을 건너뛰고 통과시킨다
 
     return photoPixels(pixels);
   } catch {
-    return true; // 분석에 실패하면 기존처럼 통과시켜 렌더링 자체는 막지 않는다.
+    return !strict; // Strict verification never treats a decoder failure as a photo.
   }
 }
 

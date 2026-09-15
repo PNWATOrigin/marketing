@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {isPhotographic} from './images.js';
 import { cached, digest } from './cache.js';
 import { ocrImage } from './ocr.js';
 import { runFfprobe } from './render/ffmpegRunner.js';
@@ -13,7 +14,7 @@ export function isTextPanel(text,width,height){
  const count=String(text||'').replace(/\s/g,'').length;
  return count>75||(lines.length>=5&&count>35)||(height>width*1.65&&count>35)||/영양정보|상품정보제공고시|교환.{0,8}반품|원재료명|섭취시주의사항|시험성적서/.test(String(text).replace(/\s/g,''));
 }
-export async function describeAssets(paths, product, onProgress=()=>{}) {
+export async function describeAssets(paths, product, onProgress=()=>{}, {uploadedDetail=false}={}) {
   const assets = [];
   // Bounded batches keep OCR and decoders within a small Render instance's memory.
   let next=0,done=0;
@@ -34,11 +35,14 @@ export async function describeAssets(paths, product, onProgress=()=>{}) {
     onProgress(++done,paths.length);
     if (!info.width || !info.height || info.width<300 || info.height<300) continue;
     const sourceIndex=Number(file.match(/img_(\d+)/)?.[1]);
-    const alt=product.imageContext?.[product.images?.[sourceIndex]]||'';
+    const alt=uploadedDetail?'':product.imageContext?.[product.images?.[sourceIndex]]||'';
     if (/19\s*금|성인\s*인증|미성년자|청소년.*이용불가|무이자|신용카드|카드\s*혜택|결제\s*안내|이모티콘|emoticon|emoji|adult.only/i.test(info.text+' '+alt)) continue;
-    const confirmedHero=!file.includes('_slice')&&(product.heroImages||[]).includes(product.images?.[sourceIndex]);
+    const confirmedHero=!uploadedDetail&&!file.includes('_slice')&&(product.heroImages||[]).includes(product.images?.[sourceIndex]);
     const type = confirmedHero&&info.text.replace(/\s/g,'').length<160?'PRODUCT_HERO':info.type==='TEXT_IMAGE'?'TEXT_IMAGE':/제품|상품|본품|패키지|product|hero/i.test(alt)&&info.type==='DETAIL'?'PRODUCT_HERO':rules.find(([,r])=>r.test(alt))?.[0]||info.type;
-    assets[i]=({ id:hash, sourceIndex, path:file, ...info, type, quality:Math.min(1,Math.min(info.width,info.height)/1000), visibility: type==='TEXT_IMAGE'?0.2:0.8, composition:Math.min(info.width,info.height)/Math.max(info.width,info.height), tags:tokens(info.text+' '+alt), provenance:'page-image+alt+local-ocr', productName:product.name });
+    const photoVerified=uploadedDetail && ['TEXT_IMAGE','INFOGRAPHIC'].includes(type)
+      && !/상품정보제공고시|교환.{0,8}반품|섭취시주의사항|시험성적서/.test(info.text.replace(/\s/g,''))
+      && await isPhotographic(file,true);
+    assets[i]=({ photoVerified, id:hash, sourceIndex, path:file, ...info, type, quality:Math.min(1,Math.min(info.width,info.height)/1000), visibility: type==='TEXT_IMAGE'?0.2:0.8, composition:Math.min(info.width,info.height)/Math.max(info.width,info.height), tags:tokens(info.text+' '+alt), provenance:'page-image+alt+local-ocr', productName:product.name });
   }
   }
   await Promise.all([worker(),worker()]);
@@ -64,7 +68,7 @@ function choose(text, assets, used, previous, profile, closing=false) {
 }
 
 export function makeStoryboard({ narration, assets, category, purpose, product }) {
-  const usable = assets.filter(a=>!['UNUSABLE','TEXT_IMAGE','REVIEW','LOGO','INFOGRAPHIC'].includes(a.type));
+  const usable = assets.filter(a=>!['UNUSABLE','TEXT_IMAGE','REVIEW','LOGO','INFOGRAPHIC'].includes(a.type) || (a.photoVerified===true && ['TEXT_IMAGE','INFOGRAPHIC'].includes(a.type)));
   if (!usable.length) throw new Error('제품을 확인할 수 있는 사진이 부족해요. 다른 상세페이지를 사용해주세요.');
   const style = styleFor(category,purpose), duration=narration.duration;
   const words = narration.words;

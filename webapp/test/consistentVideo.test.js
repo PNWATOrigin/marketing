@@ -22,3 +22,10 @@ test('relevant unused photo wins over unrelated hero and photos never repeat',()
  const board=makeStoryboard(input);assert.equal(board.shots[0].assetId,'4');assert.equal(new Set(board.shots.map(s=>s.assetId)).size,5);
  for(const count of [1,2,3,4]){const short=makeStoryboard({...input,assets:assets.slice(0,count)});assert.equal(short.shots.length,count);assert.equal(new Set(short.shots.map(s=>s.assetId)).size,count);assert.equal(short.shots.at(-1).end,15);}
 });
+test('uploaded photo with packaging text remains usable, unverified text and logos do not',()=>{
+ const base={id:'photo',path:'photo.jpg',text:'성분 함량',tags:['성분'],type:'INFOGRAPHIC',quality:1,visibility:0.8,composition:1,photoVerified:true};
+ const input={narration:{duration:15,words:[{start:0,end:15,text:'성분을 확인해요.'}]},assets:[base],category:'health',purpose:'views',product:{name:'상품'}};
+ for(const type of ['INFOGRAPHIC','TEXT_IMAGE']){const board=makeStoryboard({...input,assets:[{...base,type}]});assert.equal(board.shots.length,1);assert.equal(board.shots[0].end,15);}
+ for(const type of ['LOGO','REVIEW','UNUSABLE'])assert.throws(()=>makeStoryboard({...input,assets:[{...base,type}]}));
+ assert.throws(()=>makeStoryboard({...input,assets:[{...base,photoVerified:false}]}));
+});

@@ -194,7 +194,7 @@ async function runRender(jobId) {
       watchdog.report(20);
       if(!job.product.detailOnly)await applyCutouts(imagePaths, path.join(workDir, 'images'), job);
       updateJob(jobId,{stage:'matching'});
-      const assets=await describeAssets(imagePaths,job.product,(done,total)=>watchdog.report(25+Math.round(done/total*30)));
+      const assets=await describeAssets(imagePaths,job.product,(done,total)=>watchdog.report(25+Math.round(done/total*30)),{uploadedDetail:!!job.uploadedDetail});
       updateJob(jobId,{stage:'stickers',previewPaths:assets.map(a=>a.path)});
       if(job.product.detailOnly || job.product.preferDetail)await addDetailStickers(assets,path.join(workDir,'images'));
       watchdog.report(60);
