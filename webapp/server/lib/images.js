@@ -199,7 +199,12 @@ async function downloadOne(url, destDir, index, { skipPhotoFilter = false, produ
  * 하나가 실패해도(타임아웃, 404, 용량 초과, SSRF 차단 등) 나머지로 계속 진행하고
  * 성공한 로컬 파일 경로만 반환한다 - 전체 작업이 이미지 하나 때문에 느려지거나 실패하지 않게 한다.
  */
-export async function downloadImages(urls, destDir, { max = config.maxImages, onEach, skipPhotoFilter = false, heroImages=[] } = {}) {
+export function isIconAsset(url,alt='') {
+ let source=String(url);try{source=decodeURIComponent(source);}catch{}
+ return /(?:^|[\/_-])(?:ico|icon|icons|emoji|emoticon|btn|button)(?:[\/_.-]|$)|ico_under19|txt_naver|count_(?:up|down)|\.svg(?:[?#]|$)/i.test(source)
+   || /아이콘|이모티콘|수량증가|수량감소|성인인증|관심상품|파일첨부|결제안내|장바구니버튼/.test(String(alt).replace(/\s/g,''));
+}
+export async function downloadImages(urls, destDir, { max = config.maxImages, onEach, skipPhotoFilter = false, heroImages=[], imageContext={} } = {}) {
   await fs.mkdir(destDir, { recursive: true });
   const targets = urls.slice(0, max); // 순차 재시도가 없으니 후보를 과하게 늘릴 필요가 없다
 
@@ -209,6 +214,7 @@ export async function downloadImages(urls, destDir, { max = config.maxImages, on
   const worker=async()=>{
     while(next<targets.length){
       const i=next++,url=targets[i],productHero=heroImages.includes(url);
+      if(isIconAsset(url,imageContext[url])){results[i]=[];onEach?.(++done,targets.length);continue;}
       const items=await reuseImages(JSON.stringify([url,skipPhotoFilter,productHero]),async()=>{
         const files=await downloadOne(url,destDir,i,{skipPhotoFilter,productHero});
         return Promise.all(files.map(async file=>({suffix:path.basename(file).replace(/^img_\d+/,''),data:await fs.readFile(file)})));

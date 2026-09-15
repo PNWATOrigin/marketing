@@ -178,6 +178,7 @@ async function runRender(jobId) {
       let imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
         max: job.product.images.length,
         heroImages:job.product.heroImages||[],
+        imageContext:job.product.imageContext||{},
         onEach: (done, total) => watchdog.report(total ? 5+Math.round((done / total) * 15) : 0),
       });
       if(!imagePaths.length)throw new Error('사용할 수 있는 상품 사진을 찾지 못했어요.');
