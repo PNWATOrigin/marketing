@@ -122,6 +122,15 @@ async function sliceTallImage(filePath, destDir, index, w, h) {
   return outputs;
 }
 
+export function imageSignature(body){
+ if(!Buffer.isBuffer(body))return null;
+ if(body.length>=12&&body.toString('ascii',0,4)==='RIFF'&&body.toString('ascii',8,12)==='WEBP')return '.webp';
+ if(body.length>=8&&body.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))return '.png';
+ if(body.length>=3&&body[0]===255&&body[1]===216&&body[2]===255)return '.jpg';
+ if(/^GIF8[79]a$/.test(body.toString('ascii',0,6)))return '.gif';
+ return null;
+}
+
 const EXT_BY_MIME = {
   'image/jpeg': '.jpg',
   'image/jpg': '.jpg',
@@ -160,7 +169,7 @@ async function downloadOne(url, destDir, index, { skipPhotoFilter = false, produ
     );
     if (!res || res.status >= 400) return [];
     const contentType = (res.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
-    const ext = EXT_BY_MIME[contentType];
+    const ext = imageSignature(res.body) || EXT_BY_MIME[contentType];
     if (!ext) return []; // 이미지가 아닌 응답은 건너뛴다
     if (!res.body || res.body.length < 200) return []; // 지나치게 작은(깨진) 이미지는 제외
 
