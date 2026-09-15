@@ -32,7 +32,7 @@ export function classifyCategory(product) {
   if(ds===0 && !cosmetic.test(evidence) && (
     /건강기능식품|영양보충제|식이보충제/.test(evidence) ||
     ((health.test(evidence)||nutritionFood.test(evidence)||additionalIngredient.test(evidence)) &&
-      /섭취|복용|먹는|캡슐|정제|분말|젤리|구미|식품|하루.{0,8}[정포알]|\d+(?:정|포|캡슐)(?:입|분|$)/.test(evidence))
+      /섭취|복용|먹는|캡슐|정제|분말|젤리|구미|식품|하루.{0,8}[정포알]|한정당|\d+(?:정|포|캡슐)(?=[^가-힣]|입|분|$)/.test(evidence))
   ))return {category:'health',confidence:'medium',reason:'health-evidence-and-oral-use'};
   const category=ds>=3&&ds-hs>=3?'digital':hs>=3&&hs-ds>=3?'health':null;
   return {category,confidence:category?'medium':'unknown',reason:category?'product-description-and-ocr':'insufficient-or-conflicting',scores:{digital:ds,health:hs}};

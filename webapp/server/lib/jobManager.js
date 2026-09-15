@@ -50,7 +50,9 @@ async function enrichWithImageText(product, workDir) {
   try {
     // 세로로 긴 "상세페이지" 이미지 한 장이 여러 조각으로 잘릴 수 있어 후보 URL을
     // 넉넉히 잡고, 실제 OCR 대상 수는 따로 제한해 전체 처리 시간을 지킨다.
-    const targets = (product.images || []).slice(0, product.detailOnly?6:4);
+    const all=(product.images||[]).filter(u=>! /echosting|ico_|count_|txt_naver/i.test(u));
+    const details=all.filter(u=>/upload|detail|description/i.test(u));
+    const targets=[...new Set([all[0],...details.filter((_,i)=>i===0||i===Math.floor(details.length/2)||i===details.length-1),...all])].filter(Boolean).slice(0,product.detailOnly?6:4);
     if (!targets.length) return;
     // OCR은 사진이 아니라 글자 위주의 안내 이미지(홍보 문구 배너 등)를 오히려 읽고
     // 싶은 경우가 많아, 영상 장면용으로 쓰는 "사진다움" 필터는 건너뛴다.
@@ -80,7 +82,7 @@ async function runAnalyze(jobId) {
   if (!job || job.stage==='cancelled') return;
   updateJob(jobId, { status: 'analyzing', stage: 'analyzing', error: null });
   try {
-    const product = await cached('products-detail-v9',job.url,async()=>{
+    const product = await cached('products-detail-v10-ocr-evidence',job.url,async()=>{
       const {html,finalUrl}=await fetchProductPage(job.url);
       const product=analyzeHtml(html,finalUrl);
       if(!classifyCategory(product).category){

@@ -76,3 +76,9 @@ test('health evidence combines title form with description ingredients',()=>{
  assert.equal(detectCategory({name:'젤리'}),null);
  assert.equal(detectCategory({name:'선물',description:'청소기와 비오틴 캡슐'}),null);
 });
+
+test('package OCR recognizes tablet counts followed by package weight',()=>{
+ assert.equal(detectCategory({name:'지니어스업 키즈 1500mg',categoryText:'판토텐산칼슘 6mg 5종혼합유산균 1,500mg X 30정(45g, 167kcal)'}),'health');
+ assert.equal(detectCategory({name:'지니어스업 키즈',categoryText:'판토텐산칼슘 6mg 한 정당'}),'health');
+ assert.equal(detectCategory({name:'30정도 온열 베개'}),null);
+});
