@@ -20,5 +20,5 @@ test('relevant unused photo wins over unrelated hero and photos never repeat',()
  const assets=Array.from({length:5},(_,i)=>({id:String(i),sourceIndex:i,path:'image'+i,text:i===4?'물걸레':'',tags:i===4?['물걸레']:[],type:i===4?'DETAIL':'PRODUCT_HERO',quality:1,visibility:1,composition:1}));
  const input={narration:{duration:15,sceneBoundaries:[0,3,6,9,12,15],words:Array.from({length:5},(_,i)=>({start:i*3,end:i*3+3,text:i===0?'물걸레':'확인해요.'}))},assets,category:'digital',purpose:'brand',product:{name:'상품'}};
  const board=makeStoryboard(input);assert.equal(board.shots[0].assetId,'4');assert.equal(new Set(board.shots.map(s=>s.assetId)).size,5);
- assert.throws(()=>makeStoryboard({...input,assets:assets.slice(0,4)}),/최소 5장/);
+ for(const count of [1,2,3,4]){const short=makeStoryboard({...input,assets:assets.slice(0,count)});assert.equal(short.shots.length,count);assert.equal(new Set(short.shots.map(s=>s.assetId)).size,count);assert.equal(short.shots.at(-1).end,15);}
 });

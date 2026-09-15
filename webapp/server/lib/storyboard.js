@@ -81,7 +81,8 @@ export function makeStoryboard({ narration, assets, category, purpose, product }
   if(narration.sceneBoundaries)boundaries.splice(0,boundaries.length,...narration.sceneBoundaries);
   // Keep at least five cuts in a 15 second video; never pad with text panels.
   while(boundaries.length<6&&duration>=5){let at=0;for(let i=1;i<boundaries.length-1;i++)if(boundaries[i+1]-boundaries[i]>boundaries[at+1]-boundaries[at])at=i;boundaries.splice(at+1,0,(boundaries[at]+boundaries[at+1])/2);}
-  if(new Set(usable.map(a=>a.id)).size<boundaries.length-1)throw new Error('중복 없이 사용할 상품 사진이 최소 5장 필요해요. 상세 사진이 더 있는 상품 URL을 입력해주세요.');
+  const uniqueCount=new Set(usable.map(a=>a.id)).size;
+  if(uniqueCount<boundaries.length-1)boundaries.splice(0,boundaries.length,...Array.from({length:uniqueCount+1},(_,i)=>duration*i/uniqueCount));
   const used=new Map(); let previous=null;
   const shots=boundaries.slice(0,-1).map((start,i)=>{
     const end=boundaries[i+1];
@@ -98,7 +99,7 @@ export function makeStoryboard({ narration, assets, category, purpose, product }
     shots.at(-1).motion='hold';board.repaired=true;board.qa=assessStoryboard(board);
   }
   if(shots.some(s=>!s.semanticScore)) board.warnings.push('일부 장면은 OCR 의미 일치가 확인되지 않아 해당 상품 사진을 사용했어요.');
-  if(usable.length<3) board.warnings.push('소재가 적어 일부 상품 사진이 반복돼요.');
+  if(usable.length<3) board.warnings.push('확보된 상품 사진 수에 맞춰 장면을 구성했어요.');
   if(board.qa.errors.length) throw new Error(board.qa.errors.join(' '));
   return board;
 }
