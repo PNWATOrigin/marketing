@@ -34,12 +34,8 @@ labRouter.post('/jobs',express.json({limit:'84mb'}),wrap(async(req,res)=>{
  queueMediaTask(async()=>{try{
   await patch(j,{status:'extracting',progress:5});
   const cuts=selectOcrPaths(await prepareDetailImage(j.inputs,path.join(dir,'cuts')),6);
-  for(const [i,file] of cuts.entries()){
-   const target=path.join(dir,`cutout-${j.candidates.length}.png`);
-   try{const {stdout}=await python('labCutout.py',[file,target],45000);j.candidates.push({file:target,...JSON.parse(stdout)});}catch{}
-   await patch(j,{progress:10+Math.round((i+1)/Math.max(1,cuts.length)*80)});
-   if(j.candidates.length>=3)break;
-  }
+  const {stdout}=await python('labCutout.py',['--batch',JSON.stringify(cuts),dir],180000);
+  j.candidates=JSON.parse(stdout);
   if(!j.candidates.length)throw Error('깨끗하게 분리할 제품을 찾지 못했어요. 제품이 크게 나온 상세이미지 또는 제품 사진으로 다시 시도해주세요.');
   await patch(j,{status:'ready',progress:100});
  }catch(e){await patch(j,{status:'failed',error:e.message,progress:0});}finally{pending.delete(id);}});
