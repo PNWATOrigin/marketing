@@ -1,3 +1,4 @@
+import { selectOcrPaths } from './ocrSampling.js';
 import {validateCustomCaption,customTiming} from './customCaption.js';
 import {nextScriptVariant} from './scriptRotation.js';
 import { generateExampleScript } from './exampleTemplates.js';
@@ -57,14 +58,17 @@ async function enrichWithImageText(product, workDir) {
     if (!targets.length) return;
     // OCR은 사진이 아니라 글자 위주의 안내 이미지(홍보 문구 배너 등)를 오히려 읽고
     // 싶은 경우가 많아, 영상 장면용으로 쓰는 "사진다움" 필터는 건너뛴다.
-    const imagePaths = (await downloadImages(targets, workDir, { max: product.detailOnly?6:4, skipPhotoFilter: true })).slice(0, product.detailOnly?8:6);
+    const imagePaths = selectOcrPaths(await downloadImages(targets, workDir, { max: product.detailOnly?6:4, skipPhotoFilter: true }), 12);
     // tesseract를 동시에 여러 개 띄우면 리소스가 제한된 환경(무료 호스팅 등)에서
     // 전부 조용히 실패하는 경우가 있어(개별 오류 없이 빈 결과), 순차적으로 실행한다.
     const texts = [];
+    const priorText = product.categoryText;
     for (const p of imagePaths) {
       texts.push(await ocrImage(p, config.ocrTimeoutMs));
+      product.categoryText=[...texts, priorText].filter(Boolean).join('\n').slice(0,24000);
+      if (!product.detailOnly && classifyCategory(product).category) break;
     }
-    product.categoryText=[product.categoryText,...texts].filter(Boolean).join('\n').slice(0,16000);
+    
     if(product.detailOnly)product.detailLines=texts.flatMap(t=>t.split('\n').flatMap(line=>extractCleanLines(line,1).lines)).filter((x,i,a)=>a.indexOf(x)===i).slice(0,40);
     const { lines, blockedCount } = extractCleanLines(texts.join('\n'), 4 - (product.features?.length || 0));
     if (lines.length) product.features = [...(product.features || []), ...lines].slice(0, 4);
@@ -83,7 +87,7 @@ async function runAnalyze(jobId) {
   if (!job || job.stage==='cancelled') return;
   updateJob(jobId, { status: 'analyzing', stage: 'analyzing', error: null });
   try {
-    const product = await cached('products-detail-v10-ocr-evidence',job.url,async()=>{
+    const product = await cached('products-detail-v11-ocr-distributed',job.url,async()=>{
       const {html,finalUrl}=await fetchProductPage(job.url);
       const product=analyzeHtml(html,finalUrl);
       if(!classifyCategory(product).category){
