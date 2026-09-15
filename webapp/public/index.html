@@ -28,6 +28,13 @@
             autocomplete="off"
             required
           />
+          <div class="detail-upload">
+            <label for="detail-image">상세페이지 원본 이미지 <small>(선택)</small></label>
+            <input id="detail-image" type="file" accept="image/jpeg,image/png" aria-describedby="detail-image-help detail-image-rules" />
+            <button id="detail-image-clear" type="button" hidden>선택 취소</button>
+            <p id="detail-image-help">넣으면 이미지 수집 시간이 줄어 제작이 더 빨라질 수 있어요. 없어도 URL로 자동 진행해요.</p>
+            <small id="detail-image-rules">JPG·PNG 원본 1장 · 최대 20MB · 가로 600px 이상 세로형 · 글자가 선명한 이미지</small>
+          </div>
           <div class="category-group" id="category-group" role="radiogroup" aria-label="카테고리 선택">
             <button type="button" class="category-chip" data-category="digital">디지털/가전</button>
             <button type="button" class="category-chip" data-category="health">건강기능식품</button>
@@ -125,7 +132,7 @@
     <p>© 2026 PNWAT. All Rights Reserved.</p>
   </footer>
 
-  <script src="/js/app.js?v=20260915-ocr-distributed"></script>
+  <script src="/js/app.js?v=20260915-detail-upload"></script>
 </body>
 </html>
 

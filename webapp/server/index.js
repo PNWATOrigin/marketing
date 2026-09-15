@@ -16,6 +16,7 @@ await loadJobsFromDisk();
 
 const app = express();
 app.disable('x-powered-by');
+app.use('/api/jobs', express.json({ limit: '28mb' }));
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(config.publicDir, { setHeaders(res, filePath) { if (/\.(html|js|css)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache'); } }));
 app.use('/api', apiRouter);
@@ -26,6 +27,7 @@ app.use((req, res) => {
 
 // 하나의 요청 처리 중 발생한 오류가 서버 전체를 죽이지 않도록 마지막에서 잡아준다.
 app.use((err, req, res, _next) => {
+  if(err.type==='entity.too.large')return res.status(413).json({error:'상세이미지는 최대 20MB로 넣어주세요.'});
   console.error('요청 처리 중 오류:', err);
   if (res.headersSent) return;
   res.status(500).json({ error: '서버에서 문제가 발생했어요. 잠시 후 다시 시도해주세요.' });

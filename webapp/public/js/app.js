@@ -33,7 +33,7 @@
 
   async function api(path, options = {}) {
     const controller=new AbortController();
-    const timeout=setTimeout(()=>controller.abort(),30000);
+    const timeout=setTimeout(()=>controller.abort(),options.timeoutMs||30000);
     try {
     const res = await fetch(`/api${path}`, {
       ...options,
@@ -79,6 +79,15 @@
 
   const urlForm = document.getElementById('url-form');
   const urlInput = document.getElementById('url-input');
+  const detailInput=document.getElementById('detail-image');
+  const detailClear=document.getElementById('detail-image-clear');
+  detailInput.addEventListener('change',()=>{detailClear.hidden=!detailInput.files.length;});
+  detailClear.addEventListener('click',()=>{detailInput.value='';detailClear.hidden=true;});
+  async function readDetailImage(){
+    const file=detailInput.files[0]; if(!file)return undefined;
+    if(!['image/jpeg','image/png'].includes(file.type)||file.size>20*1024*1024)throw new Error('상세이미지는 JPG·PNG, 최대 20MB로 넣어주세요.');
+    return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('이미지를 읽지 못했어요. 다시 선택해주세요.'));reader.readAsDataURL(file);});
+  }
   const submitBtn = document.getElementById('submit-btn');
   const categoryGroup = document.getElementById('category-group');
   let selectedCategory = null;
@@ -468,7 +477,7 @@
     submitting=true; syncInputState();
     try {
       await loadPurposes();
-      const { job, resumed } = await api('/jobs', { method: 'POST', body: JSON.stringify({ url, category: selectedCategory }) });
+      const { job, resumed } = await api('/jobs', { method: 'POST', timeoutMs:120000, body: JSON.stringify({ url, category: selectedCategory, detailImage:await readDetailImage() }) });
       persistJob(job.id, resumed?null:url);
       if(resumed)applyJobState(job);else showView('analyzing');
       poll(job.id);

@@ -15,7 +15,7 @@ const exec = promisify(execFile);
 // 비율(얇은 배너/구분선)은 상품 사진이 아닐 가능성이 커서 제외한다. 반대로 세로로 아주 긴
 // 이미지는 "상세페이지" 전체를 이어붙인 이미지인 경우가 많아 - 버리지 않고 여러 장으로
 // 잘라서(slice) 각각을 후보 이미지로 쓴다.
-async function analyzeImage(filePath) {
+export async function analyzeImage(filePath) {
   try {
     const { stdout } = await exec(
       config.ffprobePath,
@@ -29,7 +29,7 @@ async function analyzeImage(filePath) {
       if (h > w) return { verdict: 'slice', w, h };
       return { verdict: 'reject' }; // 가로로 긴 얇은 배너/구분선
     }
-    return { verdict: 'keep' };
+    return { verdict: 'keep', w, h };
   } catch {
     return { verdict: 'reject' };
   }
@@ -237,4 +237,19 @@ export async function downloadImages(urls, destDir, { max = config.maxImages, on
   };
   await Promise.all([worker(),worker()]);
   return results.flat();
+}
+
+export async function prepareDetailImage(file, destDir, {skipPhotoFilter=false}={}) {
+  await fs.mkdir(destDir,{recursive:true});
+  const info=await analyzeImage(file);
+  if(info.verdict==='reject' || info.w<600 || info.h<info.w || info.w*info.h>80000000)
+    throw new Error('상세이미지는 가로 600px 이상, 세로형 JPG·PNG 원본(8천만 픽셀 이하)으로 넣어주세요.');
+  let files;
+  if(info.verdict==='slice') files=await sliceTallImage(file,destDir,0,info.w,info.h);
+  else { const target=path.join(destDir,'img_0'+path.extname(file)); await fs.copyFile(file,target); files=[target]; }
+  if(skipPhotoFilter)return files;
+  const decisions=await photographicSlices(files);
+  const chosen=[];
+  for(const [i,p] of files.entries())if(decisions?decisions[i]:await isPhotographic(p))chosen.push(p);
+  return chosen;
 }

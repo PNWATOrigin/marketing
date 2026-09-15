@@ -806,3 +806,5 @@ body {
 .example-card.selected { border-color:#ef4db8; box-shadow:0 0 0 3px #ef4db8; }
 .example-card:focus-visible { outline:3px solid #7c3aed; outline-offset:4px; }
 @media(max-width:559px) { .purpose-grid{gap:8px;} .example-card{border-radius:12px;} .example-label{font-size:11px;padding:8px 2px;} }
+
+.detail-upload{width:100%;box-sizing:border-box;text-align:left;padding:15px 18px;border:1px solid #b8cfff;border-radius:22px;background:#ffffff70;font-size:14px;margin:12px 0}.detail-upload label{display:block;font-weight:700;margin-bottom:9px}.detail-upload input{display:block;max-width:100%;font:inherit}.detail-upload p{font-size:12px;line-height:1.6;margin:10px 0 4px}.detail-upload small{font-size:11px;line-height:1.6;color:#9062b9}.detail-upload button{margin-top:8px;border:0;background:transparent;color:#b34fd1;cursor:pointer}

@@ -11,7 +11,7 @@ import { ConcurrencyQueue } from './queue.js';
 import { getJob, updateJob, setJobProgress } from './jobStore.js';
 import { fetchProductPage, PageFetchError } from './fetchPage.js';
 import { analyzeHtml } from './analyze.js';
-import { downloadImages } from './images.js';
+import { downloadImages, prepareDetailImage } from './images.js';
 import { generateScript, PURPOSES } from './script.js';
 import { renderVideo } from './render/renderVideo.js';
 import { UnsafeUrlError } from './ssrf.js';
@@ -48,17 +48,17 @@ export function enqueueRender(jobId) {
 // 상세 이미지 1~2장을 내려받아 OCR로 읽고, 짧고 깨끗해 보이는 줄만 추가 특징으로 반영한다.
 // 무료 로컬 OCR이라 완벽하지 않을 수 있어 최선 노력으로만 동작하고, 실패해도 상품 분석
 // 자체는 계속 진행된다(정보를 지어내지 않는다는 원칙을 지키기 위해 애매한 줄은 버림).
-async function enrichWithImageText(product, workDir) {
+async function enrichWithImageText(product, workDir, uploadedDetail) {
   try {
     // 세로로 긴 "상세페이지" 이미지 한 장이 여러 조각으로 잘릴 수 있어 후보 URL을
     // 넉넉히 잡고, 실제 OCR 대상 수는 따로 제한해 전체 처리 시간을 지킨다.
     const all=(product.images||[]).filter(u=>! /echosting|ico_|count_|txt_naver/i.test(u));
     const details=all.filter(u=>/upload|detail|description/i.test(u));
     const targets=[...new Set([all[0],...details.filter((_,i)=>i===0||i===Math.floor(details.length/2)||i===details.length-1),...all])].filter(Boolean).slice(0,product.detailOnly?6:4);
-    if (!targets.length) return;
+    if (!targets.length && !uploadedDetail) return;
     // OCR은 사진이 아니라 글자 위주의 안내 이미지(홍보 문구 배너 등)를 오히려 읽고
     // 싶은 경우가 많아, 영상 장면용으로 쓰는 "사진다움" 필터는 건너뛴다.
-    const imagePaths = selectOcrPaths(await downloadImages(targets, workDir, { max: product.detailOnly?6:4, skipPhotoFilter: true }), 12);
+    const imagePaths = selectOcrPaths(uploadedDetail ? await prepareDetailImage(uploadedDetail,workDir,{skipPhotoFilter:true}) : await downloadImages(targets, workDir, { max: product.detailOnly?6:4, skipPhotoFilter: true }), 12);
     // tesseract를 동시에 여러 개 띄우면 리소스가 제한된 환경(무료 호스팅 등)에서
     // 전부 조용히 실패하는 경우가 있어(개별 오류 없이 빈 결과), 순차적으로 실행한다.
     const texts = [];
@@ -75,7 +75,8 @@ async function enrichWithImageText(product, workDir) {
     if (blockedCount > 0) {
       product.warnings = [...(product.warnings || []), '검증되지 않은 과장된 표현이 포함된 문구는 제외했어요.'];
     }
-  } catch {
+  } catch (err) {
+    if(uploadedDetail)throw err;
     // OCR은 부가 기능이므로 실패해도 무시한다.
   } finally {
     await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
@@ -87,15 +88,17 @@ async function runAnalyze(jobId) {
   if (!job || job.stage==='cancelled') return;
   updateJob(jobId, { status: 'analyzing', stage: 'analyzing', error: null });
   try {
-    const product = await cached('products-detail-v11-ocr-distributed',job.url,async()=>{
+    const analyzeProduct=async()=>{
       const {html,finalUrl}=await fetchProductPage(job.url);
       const product=analyzeHtml(html,finalUrl);
-      if(!classifyCategory(product).category){
-        await enrichWithImageText(product,path.join(config.workDir,jobId,'ocr'));
+      if(job.uploadedDetail)product.detailOnly=true;
+      if(job.uploadedDetail || !classifyCategory(product).category){
+        await enrichWithImageText(product,path.join(config.workDir,jobId,'ocr'),job.uploadedDetail);
         product.ocrEnriched=true;
       }
       return product;
-    },3600000);
+    };
+    const product=job.uploadedDetail ? await analyzeProduct() : await cached('products-detail-v11-ocr-distributed',job.url,analyzeProduct,3600000);
     product.categoryDetection=classifyCategory(product);
     product.detectedCategory=product.categoryDetection.category;
     if(getJob(jobId)?.stage!=='cancelled')updateJob(jobId, { status: 'awaiting_purpose', stage: 'awaiting_purpose', ...categoryPatch({...job,product}) });
@@ -166,7 +169,7 @@ async function runRender(jobId) {
     const watchdog = startProgressWatchdog(jobId);
     try {
       if(!job.product.ocrEnriched){
-        await enrichWithImageText(job.product,path.join(workDir,'ocr'));
+        await enrichWithImageText(job.product,path.join(workDir,'ocr'),job.uploadedDetail);
         job.product.ocrEnriched=true;
         updateJob(jobId,{product:job.product});
       }
@@ -180,7 +183,7 @@ async function runRender(jobId) {
       updateJob(jobId,{status:'rendering',stage:'downloading'});
       watchdog.report(5);
       // 이미지 다운로드(0~10%)와 ffmpeg 인코딩(10~100%)을 하나의 진행률로 이어붙인다.
-      let imagePaths = await downloadImages(job.product.images, path.join(workDir, 'images'), {
+      let imagePaths = job.uploadedDetail ? await prepareDetailImage(job.uploadedDetail,path.join(workDir,'images')) : await downloadImages(job.product.images, path.join(workDir, 'images'), {
         max: job.product.images.length,
         heroImages:job.product.heroImages||[],
         imageContext:job.product.imageContext||{},

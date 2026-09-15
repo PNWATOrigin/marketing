@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises';
+import { decodeDetailUpload } from '../lib/detailUpload.js';
 import fssync from 'node:fs';
 import path from 'node:path';
 import express from 'express';
@@ -107,7 +109,17 @@ router.post(
       return res.status(200).json({job:toPublicJob(active),resumed:true});
     }
 
+    let detail;
+    try { detail=decodeDetailUpload(req.body.detailImage); } catch(err) { return res.status(400).json({error:err.message}); }
     const job = createJob({ url, category, clientId });
+    if(detail){
+      try {
+        await fs.mkdir(config.jobsDir,{recursive:true});
+        const uploadedDetail=path.join(config.jobsDir,`${job.id}.detail${detail.ext}`);
+        await fs.writeFile(uploadedDetail,detail.buffer);
+        updateJob(job.id,{uploadedDetail});
+      } catch(err) { updateJob(job.id,{status:'failed',error:'상세이미지를 저장하지 못했어요.'}); throw err; }
+    }
     enqueueAnalyze(job.id);
     res.status(201).json({ job: toPublicJob(job) });
   })
