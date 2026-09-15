@@ -286,3 +286,5 @@ export function retryJob(jobId) {
 }
 
 export function hasRunningWorker(jobId){return inFlight.has(`analyze:${jobId}`)||inFlight.has(`render:${jobId}`);}
+
+export function queueMediaTask(task){renderQueue.push(task);}

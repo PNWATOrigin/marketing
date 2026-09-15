@@ -1,3 +1,4 @@
+import {labRouter} from './routes/lab.js';
 import express from 'express';
 import { config } from './config.js';
 import { router as apiRouter } from './routes/api.js';
@@ -17,6 +18,7 @@ await loadJobsFromDisk();
 const app = express();
 app.disable('x-powered-by');
 app.use('/api/jobs', express.json({ limit: '84mb' }));
+app.use('/api/lab', labRouter);
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(config.publicDir, { setHeaders(res, filePath) { if (/\.(html|js|css)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache'); } }));
 app.use('/api', apiRouter);
