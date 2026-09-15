@@ -280,12 +280,12 @@
 
   // 제작 중에는 상세페이지 상품 이미지만 빠르게 순환한다.
   function startPreviewCycle(job) {
-    const images = job.previewCount?Array.from({length:job.previewCount},(_,i)=>`/api/jobs/${currentJobId}/preview/${i}?clientId=${encodeURIComponent(clientId)}`):[...new Set(job.product?.images || [])];
+    const images = job.previewCount?Array.from({length:job.previewCount},(_,i)=>`/api/jobs/${currentJobId}/preview/${i}?clientId=${encodeURIComponent(clientId)}`):[];
     const key=images.join('|');
     if(previewTimer&&previewPanel.dataset.images===key)return;
     if(previewTimer)clearInterval(previewTimer);
     previewPanel.dataset.images=key;
-    if (!images.length) return;
+    if (!images.length) {stopPreviewCycle();previewImg.removeAttribute('src');return;}
     previewPanel.hidden = false;
     previewIndex = 0;
     const render = () => {
