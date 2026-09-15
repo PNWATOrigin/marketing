@@ -333,6 +333,7 @@ export function analyzeHtml(html, pageUrl) {
   return {
       sourceUrl: pageUrl,
       categoryText,
+    summaryImages:dedupeImages([...heroImages,...fromJsonLd.images,...fromOg.images,...gallery,...images],8),
     heroImages,
     detailOnly,
     preferDetail:fromMeta.detailImages.length>0 || detailOnly,

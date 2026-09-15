@@ -215,14 +215,15 @@
     el.hidden = !message;
   }
 
-  function renderProductSummary(product) {
+  function renderProductSummary(product,jobId) {
     if (!product) {
       productSummary.innerHTML = '';
       return;
     }
-    const img = product.images?.[0];
+    const img = `/api/jobs/${encodeURIComponent(jobId)}/thumbnail?clientId=${encodeURIComponent(clientId)}`;
     productSummary.innerHTML = `
-      ${img ? `<img src="${escapeHtml(img)}" alt="" onerror="this.remove()" />` : ''}
+      ${img ? `<img src="${escapeHtml(img)}" alt="상품 이미지" onerror="this.hidden=true;this.nextElementSibling.hidden=false" />` : ''}
+      <span class="ps-image-empty" hidden>이미지 준비 불가</span>
       <div>
         <div class="ps-name">${escapeHtml(product.displayName || product.name || '상품명을 확인하지 못했어요')}</div>
         ${product.brand ? `<div class="ps-meta">${escapeHtml(product.brand)}</div>` : ''}
@@ -355,7 +356,7 @@
         stopPreviewCycle();
         selectedCategory=job.category;
         syncInputState();
-        renderProductSummary(job.product);
+        renderProductSummary(job.product,job.id);
         renderPurposeCards();
         showView('purpose');
         break;

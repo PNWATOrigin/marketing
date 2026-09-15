@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises';
+import {safeFetch} from '../lib/safeHttp.js';
+import {imageSignature,isIconAsset} from '../lib/images.js';
 import { decodeDetailUploads } from '../lib/detailUpload.js';
 import fssync from 'node:fs';
 import path from 'node:path';
@@ -49,6 +51,21 @@ function asyncHandler(fn) {
 router.get('/purposes', (req, res) => {
   res.json({ purposes: Object.values(PURPOSES), version:'auto-images-v3', narrationRequired:false, audioMode:'bgm-only' });
 });
+router.get('/jobs/:id/thumbnail',asyncHandler(async(req,res)=>{
+ const job=getJob(req.params.id);
+ if(!job||job.clientId!==req.query.clientId)return res.sendStatus(403);
+ const candidates=[...new Set([...(job.product?.summaryImages||[]),...(job.product?.heroImages||[]),...(job.product?.images||[])])].filter(u=>!isIconAsset(u)).slice(0,4);
+ for(const url of candidates){
+  try{
+   const result=await safeFetch(url,{timeoutMs:4000,maxBytes:12*1024*1024,accept:'image/*'});
+   const ext=imageSignature(result.body);
+   if(result.status!==200||!ext)continue;
+   res.set('Cache-Control','private, max-age=600');
+   return res.type({'.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.gif':'image/gif'}[ext]).send(result.body);
+  }catch{}
+ }
+ return res.status(404).end();
+}));
 router.get('/jobs/:id/preview/:index',(req,res)=>{
  const job=getJob(req.params.id), index=Number(req.params.index);
  if(!job||job.clientId!==req.query.clientId)return res.sendStatus(403);

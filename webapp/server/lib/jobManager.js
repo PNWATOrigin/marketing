@@ -98,7 +98,7 @@ async function runAnalyze(jobId) {
       }
       return product;
     };
-    const product=job.uploadedDetail ? await analyzeProduct() : await cached('products-detail-v11-ocr-distributed',job.url,analyzeProduct,3600000);
+    const product=job.uploadedDetail ? await analyzeProduct() : await cached('products-detail-v12-summary-images',job.url,analyzeProduct,3600000);
     product.categoryDetection=classifyCategory(product);
     product.detectedCategory=product.categoryDetection.category;
     if(getJob(jobId)?.stage!=='cancelled')updateJob(jobId, { status: 'awaiting_purpose', stage: 'awaiting_purpose', ...categoryPatch({...job,product}) });

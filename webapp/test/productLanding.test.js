@@ -30,3 +30,8 @@ test('hidden detail markup on other shops retains lazy photos and removes recomm
  const p=analyzeHtml(`<meta property="og:title" content="상품 상세"><textarea name="product_detail">&lt;img data-original="/photo.jpg"&gt;&lt;div class="recommend"&gt;&lt;img src="/other.jpg"&gt;&lt;/div&gt;</textarea>`, 'https://example.com/product/1');
  assert.deepEqual(p.images,['https://example.com/photo.jpg']);
 });
+test('summary retains representative OG image separately from long detail images',()=>{
+ const p=analyzeHtml('<meta property="og:title" content="비타민"><meta property="og:image" content="https://shop.kr/product.jpg"><div id="prdDetail"><img src="/long-detail.jpg"></div>','https://shop.kr/product/detail.html?product_no=1');
+ assert.equal(p.summaryImages[0],'https://shop.kr/product.jpg');
+ assert.ok(p.summaryImages.includes('https://shop.kr/long-detail.jpg'));
+});
