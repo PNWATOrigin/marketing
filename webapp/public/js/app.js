@@ -480,7 +480,7 @@
   });
 
   const customCaptionInput=document.getElementById('custom-caption');
-  customCaptionInput.addEventListener('input',()=>{document.getElementById('custom-caption-count').textContent=`${[...customCaptionInput.value].length}/100자`;});
+  customCaptionInput.addEventListener('input',()=>{document.getElementById('custom-caption-count').textContent=`${[...customCaptionInput.value].length}/150자`;});
   startRenderBtn.addEventListener('click', async () => {
     if (!selectedPurpose || !currentJobId) return;
     startRenderBtn.disabled = true;

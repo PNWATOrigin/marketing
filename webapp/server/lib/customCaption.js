@@ -1,6 +1,6 @@
 import {splitBreathCaptions} from './captionText.js';
 export function validateCustomCaption(value=''){
- if(typeof value!=='string'||[...value].length>100)throw new Error('직접 작성 문구는 최대 100자까지 입력해주세요.');
+ if(typeof value!=='string'||[...value].length>150)throw new Error('직접 작성 문구는 최대 150자까지 입력해주세요.');
  return value.replace(/\s+/g,' ').trim();
 }
 export function customTiming(text){
