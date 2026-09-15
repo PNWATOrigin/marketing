@@ -54,15 +54,12 @@ function affinity(text, asset) {
   return Math.min(1,matches/Math.max(1,terms.length)+shared*.2);
 }
 function choose(text, assets, used, previous, profile, closing=false) {
-  const ranked=assets.map(a=>({asset:a,semantic:affinity(text,a)}));
-  // First restrict to relevant source regions; only then minimize repeated shots.
-  const relevant=ranked.filter(a=>a.semantic>0);
-  const pool=relevant.length?relevant:ranked;
-  const fresh=ranked.filter(a=>!used.has(a.asset.id));
-  const different=pool.filter(a=>a.asset.id!==previous);
+  const fresh=assets.filter(a=>!used.has(a.id)).map(a=>({asset:a,semantic:affinity(text,a)}));
+  const relevant=fresh.filter(a=>a.semantic>0);
+  const pool=relevant.length?relevant:fresh;
   const usedSources=new Set(assets.filter(a=>used.has(a.id)).map(a=>a.sourceIndex).filter(Number.isInteger));
-  const freshSources=fresh.filter(a=>Number.isInteger(a.asset.sourceIndex)&&!usedSources.has(a.asset.sourceIndex));
-  const candidates=freshSources.length?freshSources:fresh.length?fresh:different.length?different:pool;
+  const freshSources=pool.filter(a=>Number.isInteger(a.asset.sourceIndex)&&!usedSources.has(a.asset.sourceIndex));
+  const candidates=freshSources.length?freshSources:pool;
   return candidates.map(({asset:a,semantic})=>({asset:a,semantic,score:semantic*.30+(a.type==='PRODUCT_HERO'?.35:a.type==='CLOSEUP'?.25:a.type==='USAGE'?.18:0)+a.quality*.15+a.visibility*.1+a.composition*.05+(profile.preferred.includes(a.type)?.03:0)+(closing&&a.type==='PRODUCT_HERO'?.02:0)})).sort((a,b)=>b.score-a.score)[0];
 }
 
@@ -84,6 +81,7 @@ export function makeStoryboard({ narration, assets, category, purpose, product }
   if(narration.sceneBoundaries)boundaries.splice(0,boundaries.length,...narration.sceneBoundaries);
   // Keep at least five cuts in a 15 second video; never pad with text panels.
   while(boundaries.length<6&&duration>=5){let at=0;for(let i=1;i<boundaries.length-1;i++)if(boundaries[i+1]-boundaries[i]>boundaries[at+1]-boundaries[at])at=i;boundaries.splice(at+1,0,(boundaries[at]+boundaries[at+1])/2);}
+  if(new Set(usable.map(a=>a.id)).size<boundaries.length-1)throw new Error('중복 없이 사용할 상품 사진이 최소 5장 필요해요. 상세 사진이 더 있는 상품 URL을 입력해주세요.');
   const used=new Map(); let previous=null;
   const shots=boundaries.slice(0,-1).map((start,i)=>{
     const end=boundaries[i+1];
@@ -97,8 +95,6 @@ export function makeStoryboard({ narration, assets, category, purpose, product }
   const board={version:1,category,purpose,productName:product.name,duration,style,shots,warnings:[]};
   board.qa=assessStoryboard(board);
   if (board.qa.score<80) {
-    // One deterministic repair: alternate available assets and stabilize the final frame.
-    for(let i=1;i<shots.length;i++) if(shots[i].assetId===shots[i-1].assetId&&usable.length>1){const a=usable.filter(a=>a.id!==shots[i-1].assetId).sort((a,b)=>affinity(shots[i].headline,b)-affinity(shots[i].headline,a))[0];Object.assign(shots[i],{assetId:a.id,imagePath:a.path,stickerPath:a.stickerPath,assetType:a.type,animated:a.animated,semanticScore:affinity(shots[i].headline,a)});}
     shots.at(-1).motion='hold';board.repaired=true;board.qa=assessStoryboard(board);
   }
   if(shots.some(s=>!s.semanticScore)) board.warnings.push('일부 장면은 OCR 의미 일치가 확인되지 않아 해당 상품 사진을 사용했어요.');
