@@ -1,3 +1,4 @@
+import {validateCustomCaption,customTiming} from './customCaption.js';
 import {nextScriptVariant} from './scriptRotation.js';
 import { generateExampleScript } from './exampleTemplates.js';
 import { addAiClips, aiVideoEnabled, aiVideoConfigured } from './aiVideo.js';
@@ -168,7 +169,7 @@ async function runRender(jobId) {
       if(!Number.isInteger(job.scriptVariant)){job.scriptVariant=nextScriptVariant(job.product);updateJob(jobId,{scriptVariant:job.scriptVariant});}
       if(!Number.isInteger(job.mediaVariant)){job.mediaVariant=nextScriptVariant({name:'media:'+job.product.name},4);updateJob(jobId,{mediaVariant:job.mediaVariant});}
       const script=generateExampleScript(job.product,job.purpose,job.category,job.scriptVariant);
-      const timing={duration:15,sceneBoundaries:[...script.scenes.map(s=>s.start),15],words:script.scenes.flatMap(s=>[
+      const timing=job.customCaption?customTiming(job.customCaption):{duration:15,sceneBoundaries:[...script.scenes.map(s=>s.start),15],words:script.scenes.flatMap(s=>[
         {start:s.start,end:s.start+s.duration/2,text:s.headline},
         {start:s.start+s.duration/2,end:s.end,text:s.sub||''},
       ])};
@@ -202,7 +203,7 @@ async function runRender(jobId) {
       const outputPath = path.join(config.outputDir, `${jobId}.mp4`);
       await renderVideo({
         scenes: storyboard.shots,
-        sourceData:{product:job.product,script,storyboard,category:job.category,purpose:job.purpose},
+        sourceData:{product:job.product,customCaption:job.customCaption||null,script:job.customCaption?{customCaption:job.customCaption,timing}:script,storyboard,category:job.category,purpose:job.purpose},
         style:storyboard.style,
         mediaVariant:job.mediaVariant,
         imagePaths,
@@ -237,7 +238,8 @@ async function runRender(jobId) {
   }
 }
 
-export function startJob(jobId, purposeId, scriptVariant, mediaVariant) {
+export function startJob(jobId, purposeId, scriptVariant, mediaVariant, customCaption) {
+  try{customCaption=validateCustomCaption(customCaption);}catch(err){return {ok:false,error:err.message};}
   const job = getJob(jobId);
   if (!job) return { ok: false, error: '작업을 찾을 수 없어요.' };
   if (!PURPOSES[purposeId]) return { ok: false, error: '알 수 없는 목적이에요.' };
@@ -250,7 +252,7 @@ export function startJob(jobId, purposeId, scriptVariant, mediaVariant) {
   if(aiVideoEnabled()&&!aiVideoConfigured())return {ok:false,error:'AI 영상 API 키가 설정되지 않았어요.'};
   const categoryError=categoryStartError(job);
   if(categoryError)return {ok:false,error:categoryError};
-  const patch = { ...categoryPatch(job), ...(Number.isInteger(mediaVariant)&&mediaVariant>=0&&mediaVariant<4?{mediaVariant}:{}), ...(Number.isInteger(scriptVariant)&&scriptVariant>=0&&scriptVariant<10?{scriptVariant}:{}), purpose: purposeId, status: 'queued', stage: 'queued' };
+  const patch = { customCaption, ...categoryPatch(job), ...(Number.isInteger(mediaVariant)&&mediaVariant>=0&&mediaVariant<4?{mediaVariant}:{}), ...(Number.isInteger(scriptVariant)&&scriptVariant>=0&&scriptVariant<10?{scriptVariant}:{}), purpose: purposeId, status: 'queued', stage: 'queued' };
   const updated = updateJob(jobId, patch);
   enqueueRender(jobId);
   return { ok: true, job: updated };
