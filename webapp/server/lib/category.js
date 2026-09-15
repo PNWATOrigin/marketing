@@ -3,6 +3,7 @@ const digital=/물걸레청소시스템|로봇청소|청소기|냉장고|세탁�
 const health=/영양제|건강기능식품|유산균|프로바이오틱스|프리바이오틱스|비타민|오메가[3３]|멀티미네랄|루테인|밀크씨슬|글루코사민|포스파티딜세린|올레정|올리브오일|올리브유|레몬즙|콜라겐|collagen|홍삼|초유|락토페린|보스웰리아|콘드로이친|글루타치온|아르기닌|코엔자임|마그네슘|칼슘|철분|아연|멜라토닌|단백질보충|프로틴|크레아틴|차전자피|효소|\b(?:supplement|probiotics|multivitamin)\b/i;
 // App health category also includes nutrition foods; this is not certification.
 const nutritionFood=/애사비|애플사이다비니거|애플사이더비니거|사과초모식초|applecidervinegar|그래놀라|그라놀라|시리얼|씨리얼|단백질바|프로틴바|단백질쉐이크|단백질셰이크|고단백.{0,8}(?:간식|식품|음료|과자)|(?:granola|proteinbar|proteinshake)/i;
+const additionalIngredient=/비오틴|엽산|판토텐산|셀레늄|셀렌|프로폴리스|베르베린|퀘르세틴|브로멜라인|가르시니아|카테킨|테아닌|트립토판|이노시톨|난소화성말토덱스트린|식이섬유|아스타잔틴|지아잔틴|포스트바이오틱스|신바이오틱스|MSM|쏘팔메토|로얄젤리/i;
 const cosmetic=/마스크팩|크림|샴푸|트리트먼트|앰플|세럼|로션|토너|화장품|바디워시/;
 const ingest=/섭취|복용|먹는|캡슐|정제|분말|젤리|구미|스틱|식품|하루.{0,8}[정포알]/;
 const electric=/소비전력|정격전압|충전시간|배터리용량|흡입력|가전제품|전자제품/;
@@ -26,6 +27,13 @@ export function classifyCategory(product) {
     && /섭취|복용|먹는|분말|식품|드링크|(?:디다)?샷|\bshot\b/.test(evidence)){
     return {category:'health',confidence:'medium',reason:'ingredient-and-oral-product'};
   }
+  // A product-specific description is sufficient when it explicitly names the category.
+  // Other ingredients need a separate oral-use signal, even across title/description/OCR.
+  if(ds===0 && !cosmetic.test(evidence) && (
+    /건강기능식품|영양보충제|식이보충제/.test(evidence) ||
+    ((health.test(evidence)||nutritionFood.test(evidence)||additionalIngredient.test(evidence)) &&
+      /섭취|복용|먹는|캡슐|정제|분말|젤리|구미|식품|하루.{0,8}[정포알]|\d+(?:정|포|캡슐)(?:입|분|$)/.test(evidence))
+  ))return {category:'health',confidence:'medium',reason:'health-evidence-and-oral-use'};
   const category=ds>=3&&ds-hs>=3?'digital':hs>=3&&hs-ds>=3?'health':null;
   return {category,confidence:category?'medium':'unknown',reason:category?'product-description-and-ocr':'insufficient-or-conflicting',scores:{digital:ds,health:hs}};
 }

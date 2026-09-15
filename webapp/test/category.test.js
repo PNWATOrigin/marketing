@@ -65,3 +65,14 @@ test('a-cd ingredient needs oral-product evidence; Dida collaboration title is r
  assert.equal(detectCategory({name:'디다샷 X 츠키'}),null);
  assert.equal(detectCategory({name:'무선 청소기',description:'a-cd 샷'}),'digital');
 });
+
+test('health evidence combines title form with description ingredients',()=>{
+ for(const ingredient of ['비오틴','엽산','프로폴리스','테아닌','식이섬유','MSM']){
+ assert.equal(detectCategory({name:'데일리 캡슐',description:ingredient+' 함유'}),'health');
+ assert.equal(detectCategory({name:'크림',description:ingredient+' 함유'}),null);
+ }
+ assert.equal(detectCategory({name:'데일리 케어',description:'건강기능식품'}),'health');
+ assert.equal(detectCategory({name:'건강 베개',description:'편안한 수면'}),null);
+ assert.equal(detectCategory({name:'젤리'}),null);
+ assert.equal(detectCategory({name:'선물',description:'청소기와 비오틴 캡슐'}),null);
+});
